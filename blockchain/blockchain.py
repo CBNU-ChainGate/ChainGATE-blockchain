@@ -1,13 +1,20 @@
 import datetime
 import hashlib
 import json
+from urllib.parse import urlparse
+import requests
 
 
 class Blockchain:
 
     def __init__(self):
         self.chain = []
+        self.nodes = set()
         self.create_block(proof=1, previous_hash='0', data='none')
+
+    def register_node(self, address):
+        parsed_url = urlparse(address)
+        self.nodes.add(parsed_url.netloc)
 
     # 새로운 블록 생성
     def create_block(self, proof, previous_hash, data):
@@ -64,3 +71,31 @@ class Blockchain:
             block_index += 1
 
         return True
+
+    def resolve_conflicts(self):
+        neighbours = self.nodes
+        new_chain = None
+
+        max_length = len(self.chain)
+
+        for node in neighbours:
+            url = 'http://%s/chain' % (node)
+            print('url: ' + url)
+            response = requests.post(url, data={"type": "1"})
+
+            if response.status_code == 200:
+                chain = response.json()['chain']
+                length = response.json()['length']
+
+                if length > max_length and self.is_valid_chain(chain):
+                    print("if문 통과")
+                    max_length = length
+                    new_chain = chain
+
+        print("new_chain", end='')
+        print(new_chain)
+        if new_chain:
+            self.chain = new_chain
+            return True
+
+        return False
