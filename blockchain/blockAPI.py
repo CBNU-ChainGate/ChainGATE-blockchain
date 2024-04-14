@@ -1,88 +1,86 @@
+from time import time
 from flask import Flask, jsonify, request
-from blockchain import Blockchain
+from threading import Thread
+from blockchain import Blockchain, PBFTNode
+import socket
 
-
+# Flask 앱 초기화
 app = Flask(__name__)
-app.config['JSONIFY_PRETTYPRINT_REGULAR'] = False
-entrylog = Blockchain()
+
+# 블록체인 인스턴스 생성
+local_ip = socket.gethostbyname(socket.gethostname())
+blockchain = Blockchain()
+pbft_node = PBFTNode(local_ip, blockchain)
 
 
-def makeEntryLog(data):
-    # 데이터를 제외한 블록구조 생성
-    previous_block = entrylog.get_previous_block()
-    previous_proof = previous_block['proof']
-    proof = entrylog.proof_of_work(previous_proof)
-    previous_hash = entrylog.hash(previous_block)
-    block = entrylog.create_block(proof, previous_hash, data)
-    return block
-
-
-@app.route('/makeEntryLog', methods=['POST'])
-def mine_block():
-    # params = request.get_data()
-    data = request.form['fingerprint']
-    new_block = makeEntryLog(data)
-    responses = {
-        'message': 'Congratulations, you just mined a block!',
-        **new_block
-    }
-    return jsonify(responses), 200
-
-
-@app.route('/chain', methods=['POST'])
-def get_chain():
-    chaintype = request.form['type']
-    print(chaintype)
-    if chaintype == '1':
-        response = {
-            'chain': entrylog.chain,
-            'length': len(entrylog.chain)
-        }
-    elif chaintype == '2':
-        pass
-    else:
-        response = {
-            'error': 'User ERROR: wrong type!'
-        }
-
-    return jsonify(response), 200
-
-
+# 노드 등록
 @app.route('/nodes/register', methods=['POST'])
 def register_nodes():
     values = request.get_json()
-    nodes = values['nodes']
+    nodes = values.get
 
     if nodes is None:
         return "Error: Please supply a valid list of nodes", 400
 
     for node in nodes:
-        entrylog.register_node(node)
+        blockchain.add_node(node)
 
     response = {
         'message': 'New nodes have been added',
-        'total_nodes': list(entrylog.nodes),
+        'total_nodes': list(blockchain.nodes)
     }
     return jsonify(response), 201
 
 
-@app.route('/nodes/resolve', methods=['GET'])
-def consensus():
-    replaced = entrylog.resolve_conflicts()
+# 새로운 트랜잭션 추가
+@app.route('/transaction/new', methods=['POST'])
+def new_transaction():
+    data = request.get_json()
+    client_request = {
+        'type': 'REQUEST',
+        'data': data
+    }
+    pbft_node.handle_request(client_request)
+    return jsonify({'message': 'Send Request to node'}), 201
 
-    if replaced:
+
+# 블록체인 데이터 가져오기
+@app.route('/chain/get', methods=['GET'])
+def full_chain():
+    response = {
+        'chain': blockchain.chain,
+        'length': len(blockchain.chain),
+    }
+    return jsonify(response), 200
+
+
+# 노드 동기화(자동)
+def sync_blocks():
+    while True:
+        if len(blockchain.chain) % 10 == 0 or (time.time() - float(blockchain.chain[-1]['timestamp'])) >= 300:
+            if blockchain.synchronize_node():
+                print("Blockchain synchronized")
+        time.sleep(60)  # 1분마다 체크
+
+
+# 노드 동기화(수동)           (Debugging)
+@app.route('/nodes/sync', methods=['GET'])
+def sync():
+    if blockchain.synchronize_node():
         response = {
             'message': 'Our chain was replaced',
-            'new_chain': entrylog.chain
+            'new_chain': blockchain.chain
         }
     else:
         response = {
             'message': 'Our chain is authoritative',
-            'chain': entrylog.chain
+            'chain': blockchain.chain
         }
-
     return jsonify(response), 200
 
 
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000, debug=True)
+if __name__ == "__main__":
+    # 노드 동기화 함수 실행
+    sync_thread = Thread(target=sync_blocks)
+    sync_thread.start()
+    app.run(host='0.0.0.0', port=5000)
