@@ -1,6 +1,6 @@
 import hashlib
 import json
-from time import time
+import time
 from urllib.parse import urlparse
 from flask import request
 
@@ -58,7 +58,7 @@ class Blockchain:
             self.chain = new_chain
             return True
         return False
- 
+
     @staticmethod
     def hash(block):
         block_string = json.dumps(block, sort_keys=True).encode()

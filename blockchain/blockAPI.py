@@ -1,4 +1,4 @@
-from time import time
+import time
 from flask import Flask, jsonify, request
 from threading import Thread
 from blockchain import Blockchain, PBFTNode
