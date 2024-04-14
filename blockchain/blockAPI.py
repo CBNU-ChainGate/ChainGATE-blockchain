@@ -17,7 +17,7 @@ pbft_node = PBFTNode(local_ip, blockchain)
 @app.route('/nodes/register', methods=['POST'])
 def register_nodes():
     values = request.get_json()
-    nodes = values.get
+    nodes = values.get('nodes')
 
     if nodes is None:
         return "Error: Please supply a valid list of nodes", 400
@@ -60,7 +60,7 @@ def sync_blocks():
         if len(blockchain.chain) % 10 == 0 or (time.time() - float(blockchain.chain[-1]['timestamp'])) >= 300:
             if blockchain.synchronize_node():
                 print("Blockchain synchronized")
-        time.sleep(60)  # 1분마다 체크
+        time.sleep(30)  # 1분마다 체크
 
 
 # 노드 동기화(수동)           (Debugging)
