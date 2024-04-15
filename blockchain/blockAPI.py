@@ -1,8 +1,13 @@
 import time
 from flask import Flask, jsonify, request
+import requests
 from threading import Thread
-from blockchain import Blockchain, PBFTNode
 import socket
+import hashlib
+import json
+from urllib.parse import urlparse
+from blockchain import Blockchain
+
 
 # Flask 앱 초기화
 app = Flask(__name__)
@@ -10,7 +15,96 @@ app = Flask(__name__)
 # 블록체인 인스턴스 생성
 local_ip = socket.gethostbyname(socket.gethostname())
 blockchain = Blockchain()
-pbft_node = PBFTNode(local_ip, blockchain)
+# pbft_node = PBFTNode(local_ip, blockchain)
+
+node_id = local_ip
+state = 'IDLE'
+view = 0
+log = []
+primary = list(blockchain.nodes)[0] if blockchain.nodes else None
+request_message = None
+
+
+def send(self, receiver, message):
+    node = "http://"+receiver
+    if message['type'] == 'REQUEST':
+        response = requests.post(node+"/consensus/request", data=message)
+    elif message['type'] == 'PREPREPARE':
+        response = requests.post(node+"/consensus/preprepare", data=message)
+    elif message['type'] == 'PREPARE':
+        response = requests.post(node+"/consensus/prepare", data=message)
+    elif message['type'] == 'COMMIT':
+        response = requests.post(node+"/consensus/commit", data=message)
+
+
+@app.route('/consensus/request', methods=['POST'])
+def handle_request(self, message):
+    print("~~REQUEST~~")
+    global request_message
+    if node_id == primary:
+        request_message = message  # 원본 클라이언트 요청 메시지 저장
+        N = len(blockchain.chain) + 1
+        D_m = hashlib.sha256(json.dumps(message).encode()).hexdigest()
+        preprepare_message = {
+            'type': 'PREPREPARE',
+            'view': 0,
+            'seq': N,  # 요청의 시퀀스 번호
+            'digest': D_m
+        }
+        for node in blockchain.nodes:
+            send(node, preprepare_message)
+
+
+@app.route('/consensus/preprepare', methods=['POST'])
+def handle_preprepare(self, message):
+    print("~~PREPREPARE~~")
+    if state == 'IDLE':
+        state = 'PREPREPARE'
+        log.append(message)
+        D_m = hashlib.sha256(json.dumps(message).encode()).hexdigest()
+        prepare_message = {
+            'type': 'PREPARE',
+            'view': 1,
+            'seq': message['seq'],
+            'digest': D_m,
+            'node_id': node_id
+        }
+        for node in blockchain.nodes:  # 이 부분 API request로 고치기 #########
+            send(node, prepare_message)
+
+
+@app.route('/consensus/prepare', methods=['POST'])
+def handle_prepare(self, message):
+    print("~~PREPARE~~")
+    if state == 'PREPREPARE':
+        log.append(message)
+        if len([m for m in log if m['type'] == 'PREPARE' and m['view'] == message['view'] and m['seq'] == message['seq']]) > 2/3 * len(blockchain.nodes):
+            for node in blockchain.nodes:
+                commit_message = {
+                    'type': 'COMMIT',
+                    'view': 2,
+                    'seq': message['seq'],
+                    'node_id': node_id
+                }
+                # 이 부분 API request로 고치기 #########
+                send(node, commit_message)
+
+
+@app.route('/consensus/commit', methods=['POST'])
+def handle_commit(self, message):
+    print("~~COMMIT~~")
+    if state == 'PREPARE':
+        log.append(message)
+        if len([m for m in log if m['type'] == 'COMMIT' and m['view'] == message['view'] and m['seq'] == message['seq']]) > 2/3 * len(blockchain.nodes):
+            state = 'IDLE'
+            blockchain.add_transaction(request_message)
+            if blockchain.create_block(blockchain.hash(blockchain.get_lastblock())):
+                print(f"Node [{node_id}] committed new block")
+            else:
+                print("Error: Failed to commit new block!")
+
+
+"""============================================================================="""
 
 
 # 노드 등록
@@ -40,7 +134,8 @@ def new_transaction():
         'type': 'REQUEST',
         'data': data
     }
-    pbft_node.handle_request(client_request)
+    print(client_request)
+    send(node_id, client_request)
     return jsonify({'message': 'Send Request to node'}), 201
 
 
@@ -52,6 +147,9 @@ def full_chain():
         'length': len(blockchain.chain),
     }
     return jsonify(response), 200
+
+
+"""============================================================================="""
 
 
 # 노드 동기화(자동)
