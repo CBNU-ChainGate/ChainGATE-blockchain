@@ -19,11 +19,12 @@ port = ""
 state = 'IDLE'
 view = 0
 log = []
-primary = list(blockchain.nodes)[0] if blockchain.nodes else None
+primary = node_id  # primary 정하는 알고리즘 추가 필요
 request_message = None
 
 
 def send(receiver, message):
+    print("receiver: "+receiver)
     if message['type'] == 'REQUEST':
         response = requests.post(
             f"http://{receiver}/consensus/request", json=message)
