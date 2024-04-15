@@ -15,6 +15,7 @@ local_ip = socket.gethostbyname(socket.gethostname())
 blockchain = Blockchain()
 
 node_id = local_ip
+port = ""
 state = 'IDLE'
 view = 0
 log = []
@@ -54,6 +55,7 @@ def handle_request():
         }
         for node in blockchain.nodes:
             send(node, preprepare_message)
+    return jsonify({'message': 'Step request completed'}), 200
 
 
 @app.route('/consensus/preprepare', methods=['POST'])
@@ -74,6 +76,7 @@ def handle_preprepare():
         }
         for node in blockchain.nodes:
             send(node, prepare_message)
+    return jsonify({'message': 'Step preprepare completed'}), 200
 
 
 @app.route('/consensus/prepare', methods=['POST'])
@@ -92,6 +95,7 @@ def handle_prepare():
                     'node_id': node_id
                 }
                 send(node, commit_message)
+    return jsonify({'message': 'Step commit completed'}), 200
 
 
 @app.route('/consensus/commit', methods=['POST'])
@@ -108,6 +112,7 @@ def handle_commit():
                 print(f"Node [{node_id}] committed new block")
             else:
                 print("Error: Failed to commit new block!")
+    return jsonify({'message': 'Step preprepare completed'}), 200
 
 
 @app.route('/nodes/register', methods=['POST'])
@@ -136,7 +141,7 @@ def new_transaction():
         'data': data
     }
     print(client_request)
-    send(node_id, client_request)
+    send(node_id+port, client_request)
     return jsonify({'message': 'Send Request to node'}), 201
 
 
