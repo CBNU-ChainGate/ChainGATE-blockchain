@@ -20,7 +20,7 @@ get_preparemsg_num = 0
 view = 0
 log = []
 primary = node_id  # primary 정하는 알고리즘 추가 필요
-request_message = None
+request_data = None
 
 
 # def send(receiver, message):
@@ -41,11 +41,11 @@ request_message = None
 
 # @app.route('/consensus/request', methods=['POST'])
 # def handle_request():
-#     global request_message
+#     global request_data
 #     message = request.get_json()
 #     print("~~REQUEST~~")
 #     if node_id == primary:
-#         request_message = message  # 원본 클라이언트 요청 메시지 저장
+#         request_data = message  # 원본 클라이언트 요청 메시지 저장
 #         N = len(blockchain.chain) + 1
 #         D_m = hashlib.sha256(json.dumps(message).encode()).hexdigest()
 #         preprepare_message = {
@@ -82,8 +82,7 @@ def send(receiver, message):
 
 # pre-prepare 메세지가 정상적인 메세지인지 검증
 def validate_preprepare(preprepare_message):
-    D_m = hashlib.sha256(json.dumps(
-        request_message['data']).encode()).hexdigest()
+    D_m = hashlib.sha256(json.dumps(request_data).encode()).hexdigest()
 
     # client가 보낸 data에 이상이 있다면
     if D_m != preprepare_message['digest']:
@@ -97,11 +96,11 @@ def validate_preprepare(preprepare_message):
 @app.route('/consensus/preprepare', methods=['POST'])
 def handle_preprepare():
     print("~~Sending Pre-prepare message~~")
-    global request_message, view
+    global view
     message = request.get_json()
     if node_id == primary:
         N = len(blockchain.chain) + 1
-        D_m = hashlib.sha256(json.dumps(message).encode()).hexdigest()
+        D_m = hashlib.sha256(json.dumps(message['data']).encode()).hexdigest()
         preprepare_message = {
             'type': 'PREPREPARE',
             'view': view,   # 메세지가 전송되는 view
@@ -136,7 +135,7 @@ def handle_prepare():
 
 @app.route('/consensus/commit', methods=['POST'])
 def handle_commit():
-    global state, log, request_message
+    global state, log, request_data
     message = request.get_json()
     print("~~COMMIT~~")
     if len([m for m in log if m['type'] == 'PREPARE' and m['view'] == message['view'] and m['seq'] == message['seq']]) > 2/3 * len(blockchain.nodes):
@@ -149,8 +148,8 @@ def handle_commit():
 
 @app.route('/conseneus/reply')
 def handle_reply():
-    global request_message
-    blockchain.add_transaction(request_message)
+    global request_data
+    blockchain.add_transaction(request_data)
     if blockchain.create_block(blockchain.hash(blockchain.get_lastblock())):
         print(f"Node [{node_id}] committed new block")
 
@@ -175,10 +174,10 @@ def register_nodes():
 
 @app.route('/transaction/new', methods=['POST'])
 def new_transaction():
-    global request_message, state
+    global request_data, state
     data = request.get_json()
     state = 'REQUEST'
-    request_message = data  # 원본 클라이언트 요청 메시지 저장
+    request_data = data  # 원본 클라이언트 요청 메시지 저장
     client_request = {
         'type': 'REQUEST',
         'data': data
