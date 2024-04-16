@@ -70,8 +70,8 @@ def handle_preprepare():
         N = len(blockchain.chain) + 1
         # date와 time 값 추출(JSON 형태)
         D_m = {
-            "date": message["date"],
-            "time": message["time"]
+            "date": message['data']["date"],
+            "time": message['data']["time"]
         }
         D_m = json.dumps(D_m, sort_keys=True).encode()
         preprepare_message = {
