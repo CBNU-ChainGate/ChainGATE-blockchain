@@ -3,7 +3,6 @@ from flask import Flask, jsonify, request
 import requests
 from threading import Thread
 import socket
-import hashlib
 import json
 from blockchain import Blockchain
 
@@ -93,14 +92,22 @@ def handle_prepare():
     # pre-prepare 메세지에 대한 검증
     if validate_preprepare(message):
         log.append(message)  # pre-prepare 메세지 수집
+
+        # for문을 비동기로 처리
+        threads = []
         for node in blockchain.nodes:
-            prepare_message = {
+            prepare_thread = Thread(target=send, args=(node, {
                 'type': 'PREPARE',
                 'view': view+1,
                 'seq': message['seq'],
                 'node_id': node_id
-            }
-            send(node, prepare_message)
+            }))
+            threads.append(prepare_thread)
+            prepare_thread.start()
+
+        # # 모든 스레드의 종료를 기다림
+        # for thread in threads:
+        #     thread.join()
     else:
         return jsonify({'message': 'Invalid PRE-PREPARE message!'}), 400
     return jsonify({'message': 'Pre-prepare message validated'}), 200
