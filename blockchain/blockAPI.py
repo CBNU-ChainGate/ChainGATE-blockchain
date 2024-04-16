@@ -89,13 +89,17 @@ def handle_preprepare():
 
 @app.route('/consensus/prepare', methods=['POST'])
 def handle_prepare():
+    global is_client_request_received
     print("~~Validating the message~~")
     message = request.get_json()
+
+    while not is_client_request_received:
+        print("waiting client_request ...")
+
     # pre-prepare 메세지에 대한 검증
-    if is_client_request_received and validate_preprepare(message):
+    if validate_preprepare(message):
         print('prepare > if YES!!')
         log.append(message)  # pre-prepare 메세지 수집
-
         # for문을 비동기로 처리
         threads = []
         for node in blockchain.nodes:
