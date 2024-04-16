@@ -1,7 +1,7 @@
 import time
 from flask import Flask, jsonify, request
 import requests
-from threading import Thread
+from threading import Thread, Event
 import socket
 import json
 from blockchain import Blockchain
@@ -20,7 +20,7 @@ view = 0
 log = []
 primary = "192.168.56.1"  # primary 정하는 알고리즘 추가 필요
 request_data = None
-is_client_request_received = False
+prepare_event = Event()
 
 
 def send(receiver, message):
@@ -93,8 +93,8 @@ def handle_prepare():
     print("~~Validating the message~~")
     message = request.get_json()
 
-    while not is_client_request_received:
-        print("waiting client_request ...")
+    # set()이 될 때까지 wait (new_transaction 함수에서 request_data를 할당해야 set())
+    prepare_event.wait()
 
     # pre-prepare 메세지에 대한 검증
     if validate_preprepare(message):
@@ -116,9 +116,9 @@ def handle_prepare():
         # for thread in threads:
         #     thread.join()
     else:
-        is_client_request_received = False
+        prepare_event.clear()
         return jsonify({'message': 'Invalid PRE-PREPARE message!'}), 400
-    is_client_request_received = False
+    prepare_event.clear()
     return jsonify({'message': 'Pre-prepare message validated'}), 200
 
 
@@ -175,7 +175,8 @@ def new_transaction():
     data = request.get_json()
     state = 'REQUEST'
     request_data = data  # 원본 클라이언트 요청 메시지 저장
-    is_client_request_received = True
+    if request_data:    # prepare 함수가 수행되게 설정
+        prepare_event.set()
     client_request = {
         'type': 'REQUEST',
         'data': data
@@ -220,4 +221,5 @@ def sync():
 if __name__ == "__main__":
     # sync_thread = Thread(target=sync_blocks)
     # sync_thread.start()
+    prepare_event.clear()
     app.run(host='0.0.0.0', port=80)
