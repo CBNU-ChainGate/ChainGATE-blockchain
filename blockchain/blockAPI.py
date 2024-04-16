@@ -50,7 +50,6 @@ def validate_preprepare(preprepare_message):
         "date": request_data["date"],
         "time": request_data["time"]
     }
-    D_m = json.dumps(D_m, sort_keys=True).encode()
 
     # client가 보낸 data에 이상이 있다면
     if D_m != preprepare_message['digest']:
@@ -73,7 +72,6 @@ def handle_preprepare():
             "date": message['data']["date"],
             "time": message['data']["time"]
         }
-        D_m = json.dumps(D_m, sort_keys=True).encode()
         preprepare_message = {
             'type': 'PREPREPARE',
             'view': view,   # 메세지가 전송되는 view
