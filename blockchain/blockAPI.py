@@ -26,14 +26,18 @@ prepare_event = Event()
 def send(receiver, message):
     global get_preparemsg_num
     print("receiver: "+receiver)
+
     if message['type'] == 'REQUEST':
+        # prepare 함수가 수행되게 설정
+        if request_data:
+            prepare_event.set()
         response = requests.post(
             f"http://{receiver}/consensus/preprepare", json=message)
     elif message['type'] == 'PREPREPARE':
         response = requests.post(
             f"http://{receiver}/consensus/prepare", json=message)
         if response.status_code == 200:
-            get_preparemsg_num += 1     # 응답을 받은 노드 개수 체크
+            get_preparemsg_num += 1     # 응답을 받은 노드 개수 저장
     elif message['type'] == 'PREPARE':
         log.append(message)     # prepare 메세지 수집
         # 다른 노드의 응답을 받을 때까지 대기
@@ -89,7 +93,6 @@ def handle_preprepare():
 
 @app.route('/consensus/prepare', methods=['POST'])
 def handle_prepare():
-    global is_client_request_received
     print("~~Validating the message~~")
     message = request.get_json()
 
@@ -171,18 +174,19 @@ def register_nodes():
 
 @app.route('/transaction/new', methods=['POST'])
 def new_transaction():
-    global request_data, state, primary, node_id, is_client_request_received
+    global request_data, state, primary, node_id
     data = request.get_json()
     state = 'REQUEST'
     request_data = data  # 원본 클라이언트 요청 메시지 저장
-    if request_data:    # prepare 함수가 수행되게 설정
-        prepare_event.set()
     client_request = {
         'type': 'REQUEST',
         'data': data
     }
     print(client_request)
-    send(node_id+port, client_request)
+
+    th_send = Thread(target=send, args=(node_id+port, client_request))
+    th_send.start()
+    # send(node_id+port, client_request)
     return jsonify({'message': 'Send Request to node...'}), 201
 
 
