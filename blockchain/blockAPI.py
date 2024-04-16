@@ -18,7 +18,7 @@ state = 'IDLE'
 get_preparemsg_num = 0
 view = 0
 log = []
-primary = "192.168.0.29"  # primary 정하는 알고리즘 추가 필요
+primary = "192.168.56.1"  # primary 정하는 알고리즘 추가 필요
 request_data = None
 
 
@@ -82,7 +82,7 @@ def handle_preprepare():
         for node in blockchain.nodes:
             send(node, preprepare_message)
     else:
-        return jsonify({'message': '~Not Primary node~'}), 200
+        return jsonify({'message': '~Not Primary node~'}), 400
     return jsonify({'message': 'Pre-prepare message sended'}), 200
 
 
