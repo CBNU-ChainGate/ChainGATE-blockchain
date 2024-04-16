@@ -20,6 +20,7 @@ view = 0
 log = []
 primary = "192.168.56.1"  # primary 정하는 알고리즘 추가 필요
 request_data = None
+is_client_request_received = False
 
 
 def send(receiver, message):
@@ -91,7 +92,7 @@ def handle_prepare():
     print("~~Validating the message~~")
     message = request.get_json()
     # pre-prepare 메세지에 대한 검증
-    if validate_preprepare(message):
+    if is_client_request_received and validate_preprepare(message):
         print('prepare > if YES!!')
         log.append(message)  # pre-prepare 메세지 수집
 
@@ -111,7 +112,9 @@ def handle_prepare():
         # for thread in threads:
         #     thread.join()
     else:
+        is_client_request_received = False
         return jsonify({'message': 'Invalid PRE-PREPARE message!'}), 400
+    is_client_request_received = False
     return jsonify({'message': 'Pre-prepare message validated'}), 200
 
 
@@ -164,10 +167,11 @@ def register_nodes():
 
 @app.route('/transaction/new', methods=['POST'])
 def new_transaction():
-    global request_data, state, primary, node_id
+    global request_data, state, primary, node_id, is_client_request_received
     data = request.get_json()
     state = 'REQUEST'
     request_data = data  # 원본 클라이언트 요청 메시지 저장
+    is_client_request_received = True
     client_request = {
         'type': 'REQUEST',
         'data': data
