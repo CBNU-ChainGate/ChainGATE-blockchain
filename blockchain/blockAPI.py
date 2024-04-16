@@ -65,6 +65,7 @@ def handle_preprepare():
     global view
     message = request.get_json()
     if node_id == primary:
+        print('pre-prepare > if YES!!')
         N = len(blockchain.chain) + 1
         # date와 time 값 추출(JSON 형태)
         D_m = {
@@ -91,6 +92,7 @@ def handle_prepare():
     message = request.get_json()
     # pre-prepare 메세지에 대한 검증
     if validate_preprepare(message):
+        print('prepare > if YES!!')
         log.append(message)  # pre-prepare 메세지 수집
 
         # for문을 비동기로 처리
