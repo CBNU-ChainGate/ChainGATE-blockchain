@@ -23,42 +23,6 @@ primary = node_id  # primary 정하는 알고리즘 추가 필요
 request_data = None
 
 
-# def send(receiver, message):
-#     print("receiver: "+receiver)
-#     if message['type'] == 'REQUEST':
-#         response = requests.post(
-#             f"http://{receiver}/consensus/request", json=message)
-#     elif message['type'] == 'PREPREPARE':
-#         response = requests.post(
-#             f"http://{receiver}/consensus/preprepare", json=message)
-#     elif message['type'] == 'PREPARE':
-#         response = requests.post(
-#             f"http://{receiver}/consensus/prepare", json=message)
-#     elif message['type'] == 'COMMIT':
-#         response = requests.post(
-#             f"http://{receiver}/consensus/commit", json=message)
-
-
-# @app.route('/consensus/request', methods=['POST'])
-# def handle_request():
-#     global request_data
-#     message = request.get_json()
-#     print("~~REQUEST~~")
-#     if node_id == primary:
-#         request_data = message  # 원본 클라이언트 요청 메시지 저장
-#         N = len(blockchain.chain) + 1
-#         D_m = hashlib.sha256(json.dumps(message).encode()).hexdigest()
-#         preprepare_message = {
-#             'type': 'PREPREPARE',
-#             'view': 0,
-#             'seq': N,  # 요청의 시퀀스 번호
-#             'digest': D_m
-#         }
-#         for node in blockchain.nodes:
-#             send(node, preprepare_message)
-#     return jsonify({'message': 'Step request completed'}), 200
-
-
 def send(receiver, message):
     global get_preparemsg_num
     print("receiver: "+receiver)
@@ -82,7 +46,11 @@ def send(receiver, message):
 
 # pre-prepare 메세지가 정상적인 메세지인지 검증
 def validate_preprepare(preprepare_message):
-    D_m = hashlib.sha256(json.dumps(request_data).encode()).hexdigest()
+    D_m = {
+        "date": preprepare_message["date"],
+        "time": preprepare_message["time"]
+    }
+    D_m = json.dumps(D_m, sort_keys=True).encode()
 
     # client가 보낸 data에 이상이 있다면
     if D_m != preprepare_message['digest']:
@@ -100,7 +68,12 @@ def handle_preprepare():
     message = request.get_json()
     if node_id == primary:
         N = len(blockchain.chain) + 1
-        D_m = hashlib.sha256(json.dumps(message['data']).encode()).hexdigest()
+        # date와 time 값 추출(JSON 형태)
+        D_m = {
+            "date": message["date"],
+            "time": message["time"]
+        }
+        D_m = json.dumps(D_m, sort_keys=True).encode()
         preprepare_message = {
             'type': 'PREPREPARE',
             'view': view,   # 메세지가 전송되는 view
@@ -110,6 +83,8 @@ def handle_preprepare():
         # 모든 노드에 pre-prepare 메세지 전송
         for node in blockchain.nodes:
             send(node, preprepare_message)
+    else:
+        return jsonify({'message': '~Not Primary node~'}), 200
     return jsonify({'message': 'Pre-prepare message sended'}), 200
 
 
@@ -138,7 +113,15 @@ def handle_commit():
     global state, log, request_data
     message = request.get_json()
     print("~~COMMIT~~")
-    if len([m for m in log if m['type'] == 'PREPARE' and m['view'] == message['view'] and m['seq'] == message['seq']]) > 2/3 * len(blockchain.nodes):
+    preprepare_msg_list = [m for m in log if m['type'] ==
+                           'PREPREPARE' and m['view'] == message['view'] and m['seq'] == message['seq']]
+    prepare_msg_list = [m for m in log if m['type'] == 'PREPARE' and m['view']
+                        == message['view'] and m['seq'] == message['seq']]
+    if len(preprepare_msg_list) > 2/3 * len(blockchain.nodes) and len(prepare_msg_list) > 2/3 * len(blockchain.nodes):
+        # log에서 preprepare_msg_list와 prepare_msg_list에 있는 메시지를 제거
+        log = [m for m in log if not (
+            m in preprepare_msg_list or m in prepare_msg_list)]
+
         state = 'PreparedCertificate'
         response = requests.get(f"http://{local_ip}/conseneus/reply")
     else:
@@ -174,7 +157,7 @@ def register_nodes():
 
 @app.route('/transaction/new', methods=['POST'])
 def new_transaction():
-    global request_data, state
+    global request_data, state, primary, node_id
     data = request.get_json()
     state = 'REQUEST'
     request_data = data  # 원본 클라이언트 요청 메시지 저장
@@ -183,6 +166,7 @@ def new_transaction():
         'data': data
     }
     print(client_request)
+    if primary !=
     send(node_id+port, client_request)
     return jsonify({'message': 'Send Request to node...'}), 201
 
