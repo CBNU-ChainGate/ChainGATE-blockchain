@@ -166,7 +166,6 @@ def new_transaction():
         'data': data
     }
     print(client_request)
-    if primary !=
     send(node_id+port, client_request)
     return jsonify({'message': 'Send Request to node...'}), 201
 
