@@ -47,8 +47,8 @@ def send(receiver, message):
 # pre-prepare 메세지가 정상적인 메세지인지 검증
 def validate_preprepare(preprepare_message):
     D_m = {
-        "date": preprepare_message["date"],
-        "time": preprepare_message["time"]
+        "date": request_data["date"],
+        "time": request_data["time"]
     }
     D_m = json.dumps(D_m, sort_keys=True).encode()
 
