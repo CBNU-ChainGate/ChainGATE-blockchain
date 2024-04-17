@@ -190,7 +190,7 @@ def new_transaction():
     # prepare 함수가 수행될 수 있게 설정
     if request_data:
         prepare_event.set()
-    print('is_set(): ', end='')
+    print('Transcaion/new) is_set(): ', end='')
     print(prepare_event.is_set())
     th_send = Thread(target=send, args=(node_id+port, client_request))
     th_send.start()
@@ -234,4 +234,6 @@ if __name__ == "__main__":
     # sync_thread = Thread(target=sync_blocks)
     # sync_thread.start()
     prepare_event.clear()
+    print('Main) is_set(): ', end='')
+    print(prepare_event.is_set())
     app.run(host='0.0.0.0', port=80)
