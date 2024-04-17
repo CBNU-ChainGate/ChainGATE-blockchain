@@ -104,7 +104,7 @@ def handle_prepare():
     print(prepare_event.is_set())
 
     # pre-prepare 메세지에 대한 검증
-    if validate_preprepare(message):
+    if validate_preprepare(message):  # 검증방법 재고려 필요 ######
         print('prepare > if YES!!')
         log.append(message)  # pre-prepare 메세지 수집
         # for문을 비동기로 처리
