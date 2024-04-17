@@ -37,8 +37,8 @@ def send(receiver, message):
             f"http://{receiver}/consensus/prepare", json=message)
         if response.status_code == 200:
             get_preparemsg_num += 1     # 응답을 받은 노드 개수 저장
-    elif message['type'] == 'COMMIT':
-        print("===============PREPARE===============")
+    elif message['type'] == 'PREPARE':
+        print("===============COMMIT===============")
         log.append(message)     # prepare 메세지 수집
         # 다른 노드의 응답을 받을 때까지 대기
         while get_preparemsg_num != len(blockchain.nodes):
