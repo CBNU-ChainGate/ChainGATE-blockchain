@@ -18,7 +18,7 @@ state = 'IDLE'
 get_preparemsg_num = 0
 view = 0
 log = []
-primary = "192.168.56.1"  # primary 정하는 알고리즘 추가 필요
+primary = "192.168.0.31"  # primary 정하는 알고리즘 추가 필요
 request_data = None
 prepare_event = Event()
 
