@@ -28,9 +28,6 @@ def send(receiver, message):
     print("receiver: "+receiver)
 
     if message['type'] == 'REQUEST':
-        # prepare 함수가 수행되게 설정
-        if request_data:
-            prepare_event.set()
         response = requests.post(
             f"http://{receiver}/consensus/preprepare", json=message)
     elif message['type'] == 'PREPREPARE':
@@ -96,8 +93,12 @@ def handle_prepare():
     print("~~Validating the message~~")
     message = request.get_json()
 
+    print('Before) is_set(): ', end='')
+    print(prepare_event.is_set())
     # set()이 될 때까지 wait (new_transaction 함수에서 request_data를 할당해야 set())
     prepare_event.wait()
+    print('After) is_set(): ', end='')
+    print(prepare_event.is_set())
 
     # pre-prepare 메세지에 대한 검증
     if validate_preprepare(message):
@@ -183,7 +184,11 @@ def new_transaction():
         'data': data
     }
     print(client_request)
-
+    # prepare 함수가 수행될 수 있게 설정
+    if request_data:
+        prepare_event.set()
+    print('is_set(): ', end='')
+    print(prepare_event.is_set())
     th_send = Thread(target=send, args=(node_id+port, client_request))
     th_send.start()
     # send(node_id+port, client_request)
