@@ -67,6 +67,8 @@ class Blockchain:
 
     @property
     def get_lastblock(self):
+        if len(self.chain) == 0:
+            return 0
         return self.chain[-1]
 
 
