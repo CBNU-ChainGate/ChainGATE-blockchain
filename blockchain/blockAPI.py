@@ -185,7 +185,7 @@ def handle_prepare():
     return jsonify({'message': 'Successed prepare step'}), 200
 
 
-@app.route('/conseneus/commit', methods=['POST'])
+@app.route('/consensus/commit', methods=['POST'])
 def handle_commit():
     print("~~COMMIT~~")  # Debugging
     global request_data, log, commit_certificate
