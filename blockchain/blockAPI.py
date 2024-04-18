@@ -59,12 +59,12 @@ def wait_msg(caller):
     global get_msg_num
     get_msg_num += 1     # 응답을 받은 노드 개수 저장
     while True:
-        if caller=='prepare' and get_msg_num != len(blockchain.nodes)-1:
+        if caller == 'prepare' and get_msg_num != len(blockchain.nodes)-1:
             break
-        elif caller=='commit' and get_msg_num != len(blockchain.nodes):
+        elif caller == 'commit' and get_msg_num != len(blockchain.nodes):
             break
     get_msg_num = 0
-    print("get ALL COMMIT MSG!")
+    print("*****GET ALL MESSAGE*****")
 
 
 def validate_preprepare(preprepare_message):
