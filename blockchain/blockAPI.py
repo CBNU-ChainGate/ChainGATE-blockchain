@@ -25,7 +25,6 @@ commit_certificate = False
 
 def send(receiver, message):
     """Send a message to the node through API"""
-    global get_msg_num
     print("receiver: "+receiver)  # Debugging
     if message['type'] == 'REQUEST':
         print("===============REQUEST===============")
@@ -40,37 +39,38 @@ def send(receiver, message):
     elif message['type'] == 'PREPARE':
         print("===============PREPARE===============")
         log.append(message)         # prepare 메세지 수집
-
-        # 다른 노드의 응답을 받을 때까지 대기
-        get_msg_num += 1     # 응답을 받은 노드 개수 저장
-        while get_msg_num != len(blockchain.nodes):
-            pass
-        get_msg_num = 0
-
         response = requests.post(
             f"http://{receiver}/consensus/prepare", json=message)
 
     elif message['type'] == 'COMMIT':
         print("===============COMMIT===============")
         log.append(message)         # commit 메세지 수집
-
-        # 다른 노드의 응답을 받을 때까지 대기
-        get_msg_num += 1     # 응답을 받은 노드 개수 저장
-        while get_msg_num != len(blockchain.nodes):
-            pass
-        get_msg_num = 0
-
+        # # 다른 노드의 응답을 받을 때까지 대기
+        # get_msg_num += 1     # 응답을 받은 노드 개수 저장
+        # while get_msg_num != len(blockchain.nodes):
+        #     pass
+        # get_msg_num = 0
         response = requests.post(
             f"http://{receiver}/consensus/commit", json=message)
 
 
-# pre-prepare 메세지가 정상적인 메세지인지 검증
+def wait_msg():
+    """다른 노드의 응답을 받을 때까지 대기"""
+    global get_msg_num
+    get_msg_num += 1     # 응답을 받은 노드 개수 저장
+    while get_msg_num != len(blockchain.nodes)-1:
+        pass
+    get_msg_num = 0
+    print("get ALL COMMIT MSG!")
+
+
 def validate_preprepare(preprepare_message):
+    """pre-prepare 메세지가 정상적인 메세지인지 검증"""
+
     D_m = {
         "date": request_data["date"],
         "time": request_data["time"]
     }
-
     # client가 보낸 data에 이상이 있다면
     if D_m != preprepare_message['digest']:
         return False
@@ -120,12 +120,12 @@ def handle_preprepare():
     print("~~Validating the message~~")  # Debugging
     message = request.get_json()
 
-    print('Before) is_set(): ', end='')  # Debugging
-    print(prepare_event.is_set())
+    # print('Before) is_set(): ', end='')  # Debugging
+    # print(prepare_event.is_set())
     # set()이 될 때까지 wait (new_transaction 함수에서 request_data를 할당해야 set())
     prepare_event.wait()
-    print('After) is_set(): ', end='')  # Debugging
-    print(prepare_event.is_set())
+    # print('After) is_set(): ', end='')  # Debugging
+    # print(prepare_event.is_set())
 
     # pre-prepare 메세지에 대한 검증
     if validate_preprepare(message):  # 검증방법 재고려 필요 XXXXXXXXXXXXXXXXXXx
@@ -159,12 +159,12 @@ def handle_preprepare():
 def handle_prepare():
     global prepare_certificate, log
     message = request.get_json()
+    wait_msg()  # 모든 노드한테서 메세지를 받을 때까지 기다리기
     print("~~PREPARE~~")  # Debugging
     prepare_msg_list = [m for m in log if m['type'] == 'PREPARE' and m['view']
                         == message['view'] and m['seq'] == message['seq']]
     if len(prepare_msg_list) > 2/3 * (len(blockchain.nodes)-1):
         prepare_certificate = True   # "prepared the request" 상태로 변환
-
         # for문을 비동기로 처리
         threads = []
         for node in blockchain.nodes:
@@ -177,7 +177,6 @@ def handle_prepare():
             }))
             threads.append(commit_thread)
             commit_thread.start()
-
         # # 모든 스레드의 종료를 기다림
         # for thread in threads:
         #     thread.join()
@@ -191,17 +190,15 @@ def handle_commit():
     print("~~COMMIT~~")  # Debugging
     global request_data, log, commit_certificate
     message = request.get_json()
-
+    wait_msg()  # 모든 노드한테서 메세지를 받을 때까지 기다리기
     commit_msg_list = [m for m in log if m['type'] == 'COMMIT' and m['view']
                        == message['view'] and m['seq'] == message['seq']]
     if len(commit_msg_list) > 2/3 * len(blockchain.nodes):
         commit_certificate = True   # "commit certificate" 상태로 변환
-
     # Prepare Certificate & Commit Certificate 상태가 되었다면 블록 추가 시행
     if prepare_certificate and commit_certificate:
         if reply_request():
             return jsonify({'message': 'Successed commit step!'}), 200
-
     return jsonify({'message': 'Failed commit step!'}), 400
 
 
@@ -209,13 +206,10 @@ def handle_commit():
 def register_nodes():
     values = request.get_json()
     nodes = values.get('nodes')
-
     if nodes is None:
         return "Error: Please supply a valid list of nodes", 400
-
     for node in nodes:
         blockchain.add_node(node)
-
     response = {
         'message': 'New nodes have been added',
         'total_nodes': list(blockchain.nodes)
@@ -237,8 +231,8 @@ def new_transaction():
     # prepare 함수가 수행될 수 있게 설정
     if request_data:
         prepare_event.set()
-    print('Transcaion/new) is_set(): ', end='')  # Debugging
-    print(prepare_event.is_set())  # Debugging
+    # print('Transcaion/new) is_set(): ', end='')  # Debugging
+    # print(prepare_event.is_set())  # Debugging
     th_send = Thread(target=send, args=(node_id+port, client_request))
     th_send.start()
     # send(node_id+port, client_request)
@@ -281,6 +275,6 @@ if __name__ == "__main__":
     # sync_thread = Thread(target=sync_blocks)
     # sync_thread.start()
     prepare_event.clear()
-    print('Main) is_set(): ', end='')  # Debugging
-    print(prepare_event.is_set())  # Debugging
+    # print('Main) is_set(): ', end='')  # Debugging
+    # print(prepare_event.is_set())  # Debugging
     app.run(host='0.0.0.0', port=80)
