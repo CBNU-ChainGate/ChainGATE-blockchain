@@ -85,7 +85,7 @@ def validate_preprepare(preprepare_message):
 
 def reply_request():
     blockchain.add_transaction(request_data)
-    if blockchain.create_block(blockchain.hash(blockchain.get_lastblock())):
+    if blockchain.create_block(blockchain.hash(blockchain.get_lastblock)):
         print(f"** Node [{node_id}] added a new block **")
         return True
     return False

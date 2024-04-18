@@ -65,7 +65,6 @@ class Blockchain:
         block_string = json.dumps(block, sort_keys=True).encode()
         return hashlib.sha256(block_string).hexdigest()
 
-    @property
     def get_lastblock(self):
         if len(self.chain) == 0:
             return 0
