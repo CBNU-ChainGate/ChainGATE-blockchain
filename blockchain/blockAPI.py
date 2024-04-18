@@ -3,7 +3,6 @@ from flask import Flask, jsonify, request
 import requests
 from threading import Thread, Event
 import socket
-import json
 from blockchain import Blockchain
 
 app = Flask(__name__)

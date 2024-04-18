@@ -20,7 +20,7 @@ class Blockchain:
     def create_block(self, previous_hash):
         if self.pending_transactions:
             block = {
-                'timestamp': str(time()),
+                'timestamp': str(time.time()),
                 'previous_hash': previous_hash,
                 'transactions': self.pending_transactions
             }
