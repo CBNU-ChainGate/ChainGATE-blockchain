@@ -48,7 +48,7 @@ def send(receiver, message):
         # get_msg_num += 1     # 응답을 받은 노드 개수 저장
         # while get_msg_num != len(blockchain.nodes):
         #     pass
-        # get_msg_num = 0
+        # get_msg_num = 0pl
         response = requests.post(
             f"http://{receiver}/consensus/commit", json=message)
 
@@ -58,12 +58,12 @@ def wait_msg(caller):
     global get_msg_num
     get_msg_num += 1     # 응답을 받은 노드 개수 저장
     if caller == 'prepare' and get_msg_num != len(blockchain.nodes)-1:
-        return True
+        return False
     elif caller == 'commit' and get_msg_num != len(blockchain.nodes):
-        return True
+        return False
     get_msg_num = 0
     print("*****GET ALL MESSAGE*****")
-    return False
+    return True
 
 
 def validate_preprepare(preprepare_message):
