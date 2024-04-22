@@ -12,7 +12,8 @@ blockchain = Blockchain()
 node_id = local_ip  # 어떻게 처리할지 재고려
 port = ""
 state = 'IDLE'
-get_msg_num = 0
+get_pre_msg = 0
+get_commit_msg = 0
 view = 0
 log = []
 primary = "192.168.0.31"  # primary 정하는 알고리즘 추가 필요
@@ -49,21 +50,25 @@ def send(receiver, message):
 
 
 def wait_msg(caller):
-    """다른 노드의 응답을 받을 때까지 대기"""
-    global get_msg_num, node_id, primary
-    get_msg_num += 1     # 응답을 받은 노드 개수 저장
-    # 모든 메세지를 받지 않았다면 기다리기 수행
+    """모든 노드의 응답을 받을 때까지 대기"""
+    global get_pre_msg, get_commit_msg, node_id, primary
     if caller == 'prepare':
-        if node_id == primary and get_msg_num != len(blockchain.nodes):
-            return True
-        elif get_msg_num != len(blockchain.nodes)-1:
-            return True
+        get_pre_msg += 1     # 응답을 받은 노드 개수 저장
+        if node_id == primary and get_pre_msg == len(blockchain.nodes):
+            get_pre_msg = 0
+            print("*****GET ALL MESSAGE*****")
+            return False
+        elif get_pre_msg != len(blockchain.nodes)-1:
+            get_pre_msg = 0
+            print("*****GET ALL MESSAGE*****")
+            return False
     elif caller == 'commit':
-        if get_msg_num != len(blockchain.nodes):
-            return True
-    get_msg_num = 0
-    print("*****GET ALL MESSAGE*****")
-    return False
+        get_commit_msg += 1     # 응답을 받은 노드 개수 저장
+        if get_commit_msg != len(blockchain.nodes):
+            get_commit_msg = 0
+            print("*****GET ALL MESSAGE*****")
+            return False
+    return True
 
 
 def validate_preprepare(preprepare_message):
