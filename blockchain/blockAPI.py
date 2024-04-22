@@ -37,13 +37,13 @@ def send(receiver, message):
 
     elif message['type'] == 'PREPARE':
         print("===============PREPARE===============")
-        log.append(message)         # prepare 메세지 수집
+        # log.append(message)         # prepare 메세지 수집
         response = requests.post(
             f"http://{receiver}/consensus/prepare", json=message)
 
     elif message['type'] == 'COMMIT':
         print("===============COMMIT===============")
-        log.append(message)         # commit 메세지 수집
+        # log.append(message)         # commit 메세지 수집
         response = requests.post(
             f"http://{receiver}/consensus/commit", json=message)
 
@@ -115,7 +115,7 @@ def handle_request():
 
 
 @app.route('/consensus/preprepare', methods=['POST'])
-def handle_preprepare():
+def handle_preprepare():  # Primary 노드는 해당 함수 실행 안함
     print("~~Pre-prepare~~")  # Debugging
     message = request.get_json()
 
@@ -132,7 +132,7 @@ def handle_preprepare():
     # print(prepare_event.is_set())
 
     # pre-prepare 메세지에 대한 검증
-    if validate_preprepare(message):  # 검증방법 재고려 필요 XXXXXXXXXXXXXXXXXXx
+    if validate_preprepare(message):  # 검증방법 재고려 필요 OOOOOOOOOOOOOOO
         print('preprepare > if YES!!')  # Debugging
         log.append(message)  # pre-prepare 메세지 수집
 
@@ -163,6 +163,7 @@ def handle_preprepare():
 def handle_prepare():
     global prepare_certificate, log
     message = request.get_json()
+    log.append(message)         # prepare 메세지 수집
     if wait_msg('prepare'):  # 모든 노드한테서 메세지를 받을 때까지 기다리기
         return jsonify({'message': 'Wait the message!'}), 404
     print("~~PREPARE~~")  # Debugging
@@ -195,6 +196,7 @@ def handle_commit():
     print("~~COMMIT~~")  # Debugging
     global request_data, log, commit_certificate
     message = request.get_json()
+    log.append(message)         # commit 메세지 수집
     if wait_msg('commit'):  # 모든 노드한테서 메세지를 받을 때까지 기다리기
         return jsonify({'message': 'Wait the message!'}), 404
     commit_msg_list = [m for m in log if m['type'] == 'COMMIT' and m['view']
