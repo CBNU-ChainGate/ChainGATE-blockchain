@@ -199,7 +199,7 @@ def handle_commit():
     print("~~COMMIT~~")  # Debugging
     global request_data, log, commit_certificate
     message = request.get_json()
-    if wait_msg('prepare'):  # 모든 노드한테서 메세지를 받을 때까지 기다리기
+    if wait_msg('commit'):  # 모든 노드한테서 메세지를 받을 때까지 기다리기
         return jsonify({'message': 'Wait the message!'}), 400
     commit_msg_list = [m for m in log if m['type'] == 'COMMIT' and m['view']
                        == message['view'] and m['seq'] == message['seq']]
