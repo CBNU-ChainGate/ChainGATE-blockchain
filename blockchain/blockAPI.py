@@ -93,7 +93,7 @@ def reply_request():
 
 @app.route('/consensus/request', methods=['POST'])
 def handle_request():
-    print("~~Sending Pre-prepare message~~")  # Debugging
+    print("~~Request~~")  # Debugging
     global view
     message = request.get_json()
     if node_id == primary:
@@ -120,13 +120,18 @@ def handle_request():
 
 @app.route('/consensus/preprepare', methods=['POST'])
 def handle_preprepare():
-    print("~~Validating the message~~")  # Debugging
+    print("~~Pre-prepare~~")  # Debugging
     message = request.get_json()
 
     # print('Before) is_set(): ', end='')  # Debugging
     # print(prepare_event.is_set())
+
     # set()이 될 때까지 wait (new_transaction 함수에서 request_data를 할당해야 set())
+    # 밑에 validate_preprepare를 수행하려면 request_data가 필요한데, 이는 new_transaction함수에서 설정된다.
+    # 이때, 해당 노드의 new_transaction 함수보다, primary 노드에서 요청하는 preprepare 요청이 먼저 올 경우 에러가 나기 때문에
+    # 동기적인 절차가 필요하다.
     prepare_event.wait()
+
     # print('After) is_set(): ', end='')  # Debugging
     # print(prepare_event.is_set())
 
