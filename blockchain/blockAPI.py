@@ -52,14 +52,14 @@ def wait_msg(caller):
     """다른 노드의 응답을 받을 때까지 대기"""
     global get_msg_num
     get_msg_num += 1     # 응답을 받은 노드 개수 저장
+    # 모든 메세지를 받지 않았다면 기다리기 수행
     if caller == 'prepare' and get_msg_num != len(blockchain.nodes)-1:
-        get_msg_num = 0
-        return False
+        return True
     elif caller == 'commit' and get_msg_num != len(blockchain.nodes):
-        get_msg_num = 0
-        return False
+        return True
+    get_msg_num = 0
     print("*****GET ALL MESSAGE*****")
-    return True
+    return False
 
 
 def validate_preprepare(preprepare_message):
