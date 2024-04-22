@@ -50,7 +50,7 @@ def send(receiver, message):
 
 def wait_msg(caller):
     """다른 노드의 응답을 받을 때까지 대기"""
-    global get_msg_num
+    global get_msg_num, node_id, primary
     get_msg_num += 1     # 응답을 받은 노드 개수 저장
     # 모든 메세지를 받지 않았다면 기다리기 수행
     if caller == 'prepare':
@@ -94,7 +94,7 @@ def reply_request():
 @app.route('/consensus/request', methods=['POST'])
 def handle_request():
     print("~~Request~~")  # Debugging
-    global view
+    global view, node_id, primary
     message = request.get_json()
     if node_id == primary:
         print('Request > if YES!!')  # Debugging
