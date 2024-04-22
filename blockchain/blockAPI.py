@@ -44,11 +44,6 @@ def send(receiver, message):
     elif message['type'] == 'COMMIT':
         print("===============COMMIT===============")
         log.append(message)         # commit 메세지 수집
-        # # 다른 노드의 응답을 받을 때까지 대기
-        # get_msg_num += 1     # 응답을 받은 노드 개수 저장
-        # while get_msg_num != len(blockchain.nodes):
-        #     pass
-        # get_msg_num = 0pl
         response = requests.post(
             f"http://{receiver}/consensus/commit", json=message)
 
@@ -58,10 +53,11 @@ def wait_msg(caller):
     global get_msg_num
     get_msg_num += 1     # 응답을 받은 노드 개수 저장
     if caller == 'prepare' and get_msg_num != len(blockchain.nodes)-1:
+        get_msg_num = 0
         return False
     elif caller == 'commit' and get_msg_num != len(blockchain.nodes):
+        get_msg_num = 0
         return False
-    get_msg_num = 0
     print("*****GET ALL MESSAGE*****")
     return True
 
@@ -168,7 +164,9 @@ def handle_prepare():
     global prepare_certificate, log
     message = request.get_json()
     if wait_msg('prepare'):  # 모든 노드한테서 메세지를 받을 때까지 기다리기
-        return jsonify({'message': 'Wait the message!'}), 400
+        # return jsonify({'message': 'Wait the message!'}), 400
+        print("prepare WAIT!!")
+        return
     print("~~PREPARE~~")  # Debugging
     prepare_msg_list = [m for m in log if m['type'] == 'PREPARE' and m['view']
                         == message['view'] and m['seq'] == message['seq']]
@@ -200,7 +198,9 @@ def handle_commit():
     global request_data, log, commit_certificate
     message = request.get_json()
     if wait_msg('commit'):  # 모든 노드한테서 메세지를 받을 때까지 기다리기
-        return jsonify({'message': 'Wait the message!'}), 400
+        # return jsonify({'message': 'Wait the message!'}), 400
+        print("commit WAIT!!")
+        return
     commit_msg_list = [m for m in log if m['type'] == 'COMMIT' and m['view']
                        == message['view'] and m['seq'] == message['seq']]
     if len(commit_msg_list) > 2/3 * len(blockchain.nodes):
