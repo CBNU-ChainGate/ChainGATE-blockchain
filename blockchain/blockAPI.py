@@ -53,10 +53,14 @@ def wait_msg(caller):
     global get_msg_num
     get_msg_num += 1     # 응답을 받은 노드 개수 저장
     # 모든 메세지를 받지 않았다면 기다리기 수행
-    if caller == 'prepare' and get_msg_num != len(blockchain.nodes)-1:
-        return True
-    elif caller == 'commit' and get_msg_num != len(blockchain.nodes):
-        return True
+    if caller == 'prepare':
+        if node_id == primary and get_msg_num != len(blockchain.nodes):
+            return True
+        elif get_msg_num != len(blockchain.nodes)-1:
+            return True
+    elif caller == 'commit':
+        if get_msg_num != len(blockchain.nodes):
+            return True
     get_msg_num = 0
     print("*****GET ALL MESSAGE*****")
     return False
@@ -149,9 +153,9 @@ def handle_preprepare():  # Primary 노드는 해당 함수 실행 안함
             threads.append(prepare_thread)
             prepare_thread.start()
 
-        # # 모든 스레드의 종료를 기다림
-        # for thread in threads:
-        #     thread.join()
+        # 모든 스레드의 종료를 기다림
+        for thread in threads:
+            thread.join()
     else:
         prepare_event.clear()
         return jsonify({'message': 'Invalid PRE-PREPARE message!'}), 400
@@ -183,9 +187,9 @@ def handle_prepare():
             }))
             threads.append(commit_thread)
             commit_thread.start()
-        # # 모든 스레드의 종료를 기다림
-        # for thread in threads:
-        #     thread.join()
+        # 모든 스레드의 종료를 기다림
+        for thread in threads:
+            thread.join()
     else:
         return jsonify({'message': 'Failed prepare step!'}), 400
     return jsonify({'message': 'Successed prepare step'}), 200
