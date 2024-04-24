@@ -1,7 +1,7 @@
 import time
 from flask import Flask, jsonify, request
 import requests
-from threading import Thread, Event
+from threading import Thread
 import socket
 from blockchain import Blockchain
 
@@ -18,7 +18,6 @@ view = 0
 log = []
 primary = "192.168.0.31"  # primary 정하는 알고리즘 추가 필요
 request_data = None
-prepare_event = Event()
 prepare_certificate = False
 commit_certificate = False
 
@@ -73,6 +72,10 @@ def wait_msg(caller):
 
 def validate_preprepare(preprepare_message):
     """pre-prepare 메세지가 정상적인 메세지인지 검증"""
+    global request_data
+
+    while not request_data:
+        print("Waiting client_request ...")
 
     D_m = {
         "date": request_data["date"],
@@ -109,7 +112,7 @@ def handle_request():
             "date": message['data']["date"],
             "time": message['data']["time"]
         }
-        preprepare_message = {   
+        preprepare_message = {
             'type': 'PREPREPARE',
             'view': view,   # 메세지가 전송되는 view
             'seq': N,       # 요청의 시퀀스 번호
@@ -128,17 +131,10 @@ def handle_preprepare():  # Primary 노드는 해당 함수 실행 안함
     print("~~Pre-prepare~~")  # Debugging
     message = request.get_json()
 
-    # print('Before) is_set(): ', end='')  # Debugging
-    # print(prepare_event.is_set())
-
     # set()이 될 때까지 wait (new_transaction 함수에서 request_data를 할당해야 set())
     # 밑에 validate_preprepare를 수행하려면 request_data가 필요한데, 이는 new_transaction함수에서 설정된다.
     # 이때, 해당 노드의 new_transaction 함수보다, primary 노드에서 요청하는 preprepare 요청이 먼저 올 경우 에러가 나기 때문에
     # 동기적인 절차가 필요하다.
-    prepare_event.wait()
-
-    # print('After) is_set(): ', end='')  # Debugging
-    # print(prepare_event.is_set())
 
     # pre-prepare 메세지에 대한 검증
     if validate_preprepare(message):  # 검증방법 재고려 필요 OOOOOOOOOOOOOOO
@@ -162,9 +158,7 @@ def handle_preprepare():  # Primary 노드는 해당 함수 실행 안함
         for thread in threads:
             thread.join()
     else:
-        prepare_event.clear()
         return jsonify({'message': 'Invalid PRE-PREPARE message!'}), 400
-    prepare_event.clear()
     return jsonify({'message': 'Pre-prepare message validated'}), 200
 
 
@@ -221,6 +215,7 @@ def handle_commit():
 
 @app.route('/nodes/register', methods=['POST'])
 def register_nodes():
+    global request_data
     values = request.get_json()
     nodes = values.get('nodes')
     if nodes is None:
@@ -231,12 +226,13 @@ def register_nodes():
         'message': 'New nodes have been added',
         'total_nodes': list(blockchain.nodes)
     }
+    request_data = None
     return jsonify(response), 201
 
 
 @app.route('/transaction/new', methods=['POST'])
 def new_transaction():
-    global request_data, state, primary, node_id
+    global request_data, state, primary, node_id, port
     data = request.get_json()
     state = 'REQUEST'
     request_data = data  # 원본 클라이언트 요청 메시지 저장
@@ -246,13 +242,8 @@ def new_transaction():
     }
     print(client_request)  # Debugging
     # prepare 함수가 수행될 수 있게 설정
-    if request_data:
-        prepare_event.set()
-    # print('Transcaion/new) is_set(): ', end='')  # Debugging
-    # print(prepare_event.is_set())  # Debugging
     th_send = Thread(target=send, args=(node_id+port, client_request))
     th_send.start()
-    # send(node_id+port, client_request)
     return jsonify({'message': 'Send Request to node...'}), 201
 
 
@@ -291,7 +282,4 @@ def sync():
 if __name__ == "__main__":
     # sync_thread = Thread(target=sync_blocks)
     # sync_thread.start()
-    prepare_event.clear()
-    # print('Main) is_set(): ', end='')  # Debugging
-    # print(prepare_event.is_set())  # Debugging
     app.run(host='0.0.0.0', port=80)
