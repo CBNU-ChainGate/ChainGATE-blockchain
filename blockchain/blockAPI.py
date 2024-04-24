@@ -109,7 +109,7 @@ def handle_request():
             "date": message['data']["date"],
             "time": message['data']["time"]
         }
-        preprepare_message = {
+        preprepare_message = {   
             'type': 'PREPREPARE',
             'view': view,   # 메세지가 전송되는 view
             'seq': N,       # 요청의 시퀀스 번호
@@ -202,12 +202,12 @@ def handle_prepare():
 
 @app.route('/consensus/commit', methods=['POST'])
 def handle_commit():
-    print("~~COMMIT~~")  # Debugging
     global request_data, log, commit_certificate
     message = request.get_json()
     log.append(message)         # commit 메세지 수집
     if wait_msg('commit'):  # 모든 노드한테서 메세지를 받을 때까지 기다리기
         return jsonify({'message': 'Wait the message!'}), 404
+    print("~~COMMIT~~")  # Debugging
     commit_msg_list = [m for m in log if m['type'] == 'COMMIT' and m['view']
                        == message['view'] and m['seq'] == message['seq']]
     if len(commit_msg_list) > 2/3 * len(blockchain.nodes):
