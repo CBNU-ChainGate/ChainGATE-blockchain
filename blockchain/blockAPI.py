@@ -242,8 +242,9 @@ def new_transaction():
     }
     print(client_request)  # Debugging
     # prepare 함수가 수행될 수 있게 설정
-    th_send = Thread(target=send, args=(node_id+port, client_request))
-    th_send.start()
+    # th_send = Thread(target=send, args=(node_id+port, client_request))
+    # th_send.start()
+    send(node_id+port, client_request)
     return jsonify({'message': 'Send Request to node...'}), 201
 
 
