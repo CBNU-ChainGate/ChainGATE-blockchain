@@ -55,13 +55,13 @@ def wait_msg(caller):
             get_pre_msg = 0
             print("*****GET ALL MESSAGE*****")
             return False
-        elif get_pre_msg != len(blockchain.nodes)-1:
+        elif get_pre_msg == len(blockchain.nodes)-1:
             get_pre_msg = 0
             print("*****GET ALL MESSAGE*****")
             return False
     elif caller == 'commit':
         get_commit_msg += 1     # 응답을 받은 노드 개수 저장
-        if get_commit_msg != len(blockchain.nodes):
+        if get_commit_msg == len(blockchain.nodes):
             get_commit_msg = 0
             print("*****GET ALL MESSAGE*****")
             return False
