@@ -110,15 +110,19 @@ def handle_request():
                 "date": message['data']["date"],
                 "time": message['data']["time"]
             }
-            preprepare_message = {
-                'type': 'PREPREPARE',
-                'view': view,   # 메세지가 전송되는 view
-                'seq': N,       # 요청의 시퀀스 번호
-                'digest': D_m   # 요청 데이터의 요약본
-            }
-            # 모든 노드에 pre-prepare 메세지 전송
+            threads = []
             for node in blockchain.nodes:
-                send(node, preprepare_message)
+                preprepare_thread = Thread(target=send, args=(node, {
+                    'type': 'PREPREPARE',
+                    'view': view,   # 메세지가 전송되는 view
+                    'seq': N,       # 요청의 시퀀스 번호
+                    'digest': D_m   # 요청 데이터의 요약본
+                }))
+                threads.append(preprepare_thread)
+                preprepare_thread.start()
+            # 모든 스레드의 종료를 기다림
+            for thread in threads:
+                thread.join()
         else:
             return jsonify({'message': '~Not Primary node~'}), 400
     except Exception as e:
