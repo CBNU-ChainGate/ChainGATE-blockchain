@@ -212,7 +212,7 @@ def handle_prepare():
 @app.route('/consensus/commit', methods=['POST'])
 def handle_commit():
     global request_data, log, commit_certificate, consensus_failed, consensus_done
-    while consensus_done[2] != node_len:
+    while consensus_done[2] != node_len-1:
         pass
     try:
         message = request.get_json()
