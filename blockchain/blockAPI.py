@@ -12,19 +12,18 @@ blockchain = Blockchain()
 node_len = 0
 node_id = local_ip  # 어떻게 처리할지 재고려
 port = ""
+primary = "192.168.0.31"  # primary 정하는 알고리즘 추가 필요
 state = 'IDLE'
-get_pre_msg = 0
-get_commit_msg = 0
 view = 0
 log = []
-primary = "192.168.0.31"  # primary 정하는 알고리즘 추가 필요
 request_data = None
-consensus_step = [1, 0, 0, 0]
+consensus_done = [1, 0, 0]  # 진행완료 된 합의단계
+get_pre_msg = 0  # prepare 요청을 받은 수
+get_commit_msg = 0  # commit 요청을 받은 수
 prepare_certificate = False
 commit_certificate = False
 consensus_failed = False
 start_time = time.time()
-performed_prepare = 0
 TIMEOUT = 10
 
 
@@ -156,8 +155,9 @@ def handle_preprepare():  # Primary 노드는 해당 함수 실행 안함
             # 모든 스레드의 종료를 기다림
             for thread in threads:
                 thread.join()
-            consensus_step[1] += 1
+            consensus_done[1] += 1
         else:
+            consensus_done[1] += 1
             return jsonify({'message': 'Invalid PRE-PREPARE message!'}), 400
     except Exception as e:
         consensus_failed = True
@@ -167,8 +167,10 @@ def handle_preprepare():  # Primary 노드는 해당 함수 실행 안함
 
 @app.route('/consensus/prepare', methods=['POST'])
 def handle_prepare():
-    global prepare_certificate, log, consensus_failed, performed_prepare
+    global prepare_certificate, log, consensus_failed, consensus_done
     message = request.get_json()
+    while consensus_done[1] != 1:
+        pass
     try:
         log.append(message)         # prepare 메세지 수집
         if wait_msg('prepare'):  # 모든 노드한테서 메세지를 받을 때까지 기다리기
@@ -193,10 +195,9 @@ def handle_prepare():
             # 모든 스레드의 종료를 기다림
             for thread in threads:
                 thread.join()
-            performed_prepare += 1
-
+            consensus_done[2] += 1
         else:
-            performed_prepare += 1
+            consensus_done[2] += 1
             return jsonify({'message': 'Failed prepare step!'}), 400
     except Exception as e:
         consensus_failed = True
@@ -206,10 +207,10 @@ def handle_prepare():
 
 @app.route('/consensus/commit', methods=['POST'])
 def handle_commit():
-    global request_data, log, commit_certificate, consensus_failed
+    global request_data, log, commit_certificate, consensus_failed, consensus_done
+    while consensus_done[2] != node_len:
+        pass
     try:
-        while performed_prepare != node_len:
-            pass
         message = request.get_json()
         log.append(message)         # commit 메세지 수집
         if wait_msg('commit'):  # 모든 노드한테서 메세지를 받을 때까지 기다리기
@@ -223,6 +224,7 @@ def handle_commit():
         if prepare_certificate and commit_certificate:
             if reply_request():
                 log = []
+                consensus_done = [1, 0, 0]
                 return jsonify({'message': 'Successed commit step!'}), 200
     except Exception as e:
         consensus_failed = True
