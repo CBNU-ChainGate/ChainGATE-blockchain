@@ -21,7 +21,7 @@ request_data = None
 prepare_certificate = False
 commit_certificate = False
 consensus_failed = False
-start_time = None
+start_time = time.time()
 TIMEOUT = 10
 
 
