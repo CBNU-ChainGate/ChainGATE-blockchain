@@ -173,7 +173,7 @@ def handle_preprepare():  # Primary 노드는 해당 함수 실행 안함
 def handle_prepare():
     global prepare_certificate, log, consensus_failed, consensus_done
     message = request.get_json()
-    while consensus_done[1] != 1:
+    while consensus_done[1] != 1 and node_id != primary:
         pass
     try:
         log.append(message)         # prepare 메세지 수집
