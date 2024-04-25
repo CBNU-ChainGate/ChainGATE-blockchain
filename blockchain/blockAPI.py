@@ -1,4 +1,3 @@
-import time
 from flask import Flask, jsonify, request
 import requests
 from threading import Thread
@@ -236,9 +235,6 @@ def new_transaction():
         'data': data
     }
     print(client_request)  # Debugging
-    # prepare 함수가 수행될 수 있게 설정
-    # th_send = Thread(target=send, args=(node_id+port, client_request))
-    # th_send.start()
     send(node_id+port, client_request)
     return jsonify({'message': 'Send Request to node...'}), 201
 
@@ -252,30 +248,5 @@ def full_chain():
     return jsonify(response), 200
 
 
-def sync_blocks():
-    while True:
-        if len(blockchain.chain) % 10 == 0 or (time.time() - float(blockchain.chain[-1]['timestamp'])) >= 300:
-            if blockchain.synchronize_node():
-                print("Blockchain synchronized")
-        time.sleep(30)
-
-
-@app.route('/nodes/sync', methods=['GET'])
-def sync():
-    if blockchain.synchronize_node():
-        response = {
-            'message': 'Our chain was replaced',
-            'new_chain': blockchain.chain
-        }
-    else:
-        response = {
-            'message': 'Our chain is authoritative',
-            'chain': blockchain.chain
-        }
-    return jsonify(response), 200
-
-
 if __name__ == "__main__":
-    # sync_thread = Thread(target=sync_blocks)
-    # sync_thread.start()
     app.run(host='0.0.0.0', port=80)
