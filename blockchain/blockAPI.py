@@ -72,6 +72,8 @@ def validate_preprepare(preprepare_message):
     """pre-prepare 메세지가 정상적인 메세지인지 검증"""
     global request_data
 
+    # validate_preprepare를 수행하려면 request_data가 필요하다.
+    # 따라서 request_data가 설정될 때까지 기다린다.
     while not request_data:
         print("Waiting client_request ...")
 
@@ -86,15 +88,6 @@ def validate_preprepare(preprepare_message):
     if preprepare_message['view'] != view or preprepare_message['seq'] != len(blockchain.chain)+1:
         return False
     return True
-
-
-def reply_request():
-    blockchain.add_transaction(request_data)
-    last_block = blockchain.get_lastblock()
-    if blockchain.create_block(blockchain.hash(last_block)):
-        print(f"** Node [{node_id}] added a new block **")
-        return True
-    return False
 
 
 @app.route('/consensus/request', methods=['POST'])
@@ -128,11 +121,6 @@ def handle_request():
 def handle_preprepare():  # Primary 노드는 해당 함수 실행 안함
     print("~~Pre-prepare~~")  # Debugging
     message = request.get_json()
-
-    # set()이 될 때까지 wait (new_transaction 함수에서 request_data를 할당해야 set())
-    # 밑에 validate_preprepare를 수행하려면 request_data가 필요한데, 이는 new_transaction함수에서 설정된다.
-    # 이때, 해당 노드의 new_transaction 함수보다, primary 노드에서 요청하는 preprepare 요청이 먼저 올 경우 에러가 나기 때문에
-    # 동기적인 절차가 필요하다.
 
     # pre-prepare 메세지에 대한 검증
     if validate_preprepare(message):  # 검증방법 재고려 필요 OOOOOOOOOOOOOOO
@@ -209,6 +197,15 @@ def handle_commit():
         if reply_request():
             return jsonify({'message': 'Successed commit step!'}), 200
     return jsonify({'message': 'Failed commit step!'}), 400
+
+
+def reply_request():
+    blockchain.add_transaction(request_data)
+    last_block = blockchain.get_lastblock()
+    if blockchain.create_block(blockchain.hash(last_block)):
+        print(f"** Node [{node_id}] added a new block **")
+        return True
+    return False
 
 
 @app.route('/nodes/register', methods=['POST'])
