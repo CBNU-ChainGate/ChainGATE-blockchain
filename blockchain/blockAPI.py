@@ -133,7 +133,7 @@ def handle_request():
 
 @app.route('/consensus/preprepare', methods=['POST'])
 def handle_preprepare():  # Primary 노드는 해당 함수 실행 안함
-    global consensus_failed
+    global consensus_failed, consensus_done
     print("~~Pre-prepare~~")  # Debugging
     message = request.get_json()
 
