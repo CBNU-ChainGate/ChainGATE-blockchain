@@ -9,6 +9,7 @@ app = Flask(__name__)
 
 local_ip = socket.gethostbyname(socket.gethostname())
 blockchain = Blockchain()
+node_len = 0
 node_id = local_ip  # 어떻게 처리할지 재고려
 port = ""
 state = 'IDLE'
@@ -18,10 +19,12 @@ view = 0
 log = []
 primary = "192.168.0.31"  # primary 정하는 알고리즘 추가 필요
 request_data = None
+consensus_step = [1, 0, 0, 0]
 prepare_certificate = False
 commit_certificate = False
 consensus_failed = False
 start_time = time.time()
+performed_prepare = 0
 TIMEOUT = 10
 
 
@@ -54,17 +57,17 @@ def wait_msg(caller):
     global get_pre_msg, get_commit_msg, node_id, primary
     if caller == 'prepare':
         get_pre_msg += 1     # 응답을 받은 노드 개수 저장
-        if node_id == primary and get_pre_msg == len(blockchain.nodes):
+        if node_id == primary and get_pre_msg == node_len:
             get_pre_msg = 0
             print("*****GET ALL MESSAGE*****")
             return False
-        elif get_pre_msg == len(blockchain.nodes)-1:
+        elif get_pre_msg == node_len-1:
             get_pre_msg = 0
             print("*****GET ALL MESSAGE*****")
             return False
     elif caller == 'commit':
         get_commit_msg += 1     # 응답을 받은 노드 개수 저장
-        if get_commit_msg == len(blockchain.nodes):
+        if get_commit_msg == node_len:
             get_commit_msg = 0
             print("*****GET ALL MESSAGE*****")
             return False
@@ -153,6 +156,7 @@ def handle_preprepare():  # Primary 노드는 해당 함수 실행 안함
             # 모든 스레드의 종료를 기다림
             for thread in threads:
                 thread.join()
+            consensus_step[1] += 1
         else:
             return jsonify({'message': 'Invalid PRE-PREPARE message!'}), 400
     except Exception as e:
@@ -163,7 +167,7 @@ def handle_preprepare():  # Primary 노드는 해당 함수 실행 안함
 
 @app.route('/consensus/prepare', methods=['POST'])
 def handle_prepare():
-    global prepare_certificate, log, consensus_failed
+    global prepare_certificate, log, consensus_failed, performed_prepare
     message = request.get_json()
     try:
         log.append(message)         # prepare 메세지 수집
@@ -172,7 +176,7 @@ def handle_prepare():
         print("~~PREPARE~~")  # Debugging
         prepare_msg_list = [m for m in log if m['type'] == 'PREPARE' and m['view']
                             == message['view'] and m['seq'] == message['seq']]
-        if len(prepare_msg_list) > 2/3 * (len(blockchain.nodes)-1):
+        if len(prepare_msg_list) > 2/3 * (node_len-1):
             prepare_certificate = True   # "prepared the request" 상태로 변환
             # for문을 비동기로 처리
             threads = []
@@ -189,7 +193,10 @@ def handle_prepare():
             # 모든 스레드의 종료를 기다림
             for thread in threads:
                 thread.join()
+            performed_prepare += 1
+
         else:
+            performed_prepare += 1
             return jsonify({'message': 'Failed prepare step!'}), 400
     except Exception as e:
         consensus_failed = True
@@ -201,6 +208,8 @@ def handle_prepare():
 def handle_commit():
     global request_data, log, commit_certificate, consensus_failed
     try:
+        while performed_prepare != node_len:
+            pass
         message = request.get_json()
         log.append(message)         # commit 메세지 수집
         if wait_msg('commit'):  # 모든 노드한테서 메세지를 받을 때까지 기다리기
@@ -208,7 +217,7 @@ def handle_commit():
         print("~~COMMIT~~")  # Debugging
         commit_msg_list = [m for m in log if m['type'] == 'COMMIT' and m['view']
                            == message['view'] and m['seq'] == message['seq']]
-        if len(commit_msg_list) > 2/3 * len(blockchain.nodes):
+        if len(commit_msg_list) > 2/3 * node_len:
             commit_certificate = True   # "commit certificate" 상태로 변환
         # Prepare Certificate & Commit Certificate 상태가 되었다면 블록 추가 시행
         if prepare_certificate and commit_certificate:
@@ -232,7 +241,7 @@ def reply_request():
 
 @app.route('/nodes/register', methods=['POST'])
 def register_nodes():
-    global request_data
+    global request_data, node_len
     values = request.get_json()
     nodes = values.get('nodes')
     if nodes is None:
@@ -244,6 +253,7 @@ def register_nodes():
         'total_nodes': list(blockchain.nodes)
     }
     request_data = None
+    node_len = len(blockchain.nodes)
     return jsonify(response), 201
 
 
