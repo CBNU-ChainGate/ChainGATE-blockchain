@@ -37,13 +37,11 @@ def send(receiver, message):
 
     elif message['type'] == 'PREPARE':
         print("===============PREPARE===============")
-        # log.append(message)         # prepare 메세지 수집
         response = requests.post(
             f"http://{receiver}/consensus/prepare", json=message)
 
     elif message['type'] == 'COMMIT':
         print("===============COMMIT===============")
-        # log.append(message)         # commit 메세지 수집
         response = requests.post(
             f"http://{receiver}/consensus/commit", json=message)
 
