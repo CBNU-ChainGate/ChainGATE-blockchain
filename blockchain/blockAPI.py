@@ -178,6 +178,7 @@ def handle_prepare():
     try:
         log.append(message)         # prepare 메세지 수집
         if wait_msg('prepare'):  # 모든 노드한테서 메세지를 받을 때까지 기다리기
+            consensus_done[2] += 1
             return jsonify({'message': 'Wait the message!'}), 404
         print("~~PREPARE~~")  # Debugging
         prepare_msg_list = [m for m in log if m['type'] == 'PREPARE' and m['view']
