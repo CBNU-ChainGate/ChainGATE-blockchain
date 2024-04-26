@@ -120,9 +120,6 @@ def handle_request():
                 }))
                 threads.append(preprepare_thread)
                 preprepare_thread.start()
-            # 모든 스레드의 종료를 기다림
-            # for thread in threads:
-                # thread.join()
         else:
             return jsonify({'message': '~Not Primary node~'}), 400
     except Exception as e:
@@ -155,10 +152,6 @@ def handle_preprepare():  # Primary 노드는 해당 함수 실행 안함
                 }))
                 threads.append(prepare_thread)
                 prepare_thread.start()
-
-            # 모든 스레드의 종료를 기다림
-            # for thread in threads:
-                # thread.join()
             consensus_done[1] += 1
         else:
             consensus_done[1] += 1
@@ -197,9 +190,6 @@ def handle_prepare():
                 }))
                 threads.append(commit_thread)
                 commit_thread.start()
-            # 모든 스레드의 종료를 기다림
-            # for thread in threads:
-                # thread.join()
             consensus_done[2] += 1
         else:
             consensus_done[2] += 1
