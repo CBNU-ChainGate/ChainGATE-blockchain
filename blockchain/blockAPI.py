@@ -1,25 +1,30 @@
-import time
 from flask import Flask, jsonify, request
-import requests
 from threading import Thread
+import requests
 import socket
+import time
 from blockchain import Blockchain
 
 app = Flask(__name__)
 
 local_ip = socket.gethostbyname(socket.gethostname())
 blockchain = Blockchain()
+node_len = 0
 node_id = local_ip  # 어떻게 처리할지 재고려
 port = ""
+primary = "192.168.0.31"  # primary 정하는 알고리즘 추가 필요
 state = 'IDLE'
-get_pre_msg = 0
-get_commit_msg = 0
 view = 0
 log = []
-primary = "192.168.0.31"  # primary 정하는 알고리즘 추가 필요
 request_data = None
+consensus_done = [1, 0, 0]  # 진행완료 된 합의단계
+get_pre_msg = 0  # prepare 요청을 받은 수
+get_commit_msg = 0  # commit 요청을 받은 수
 prepare_certificate = False
 commit_certificate = False
+consensus_failed = False
+start_time = time.time()
+TIMEOUT = 10
 
 
 def send(receiver, message):
@@ -51,17 +56,17 @@ def wait_msg(caller):
     global get_pre_msg, get_commit_msg, node_id, primary
     if caller == 'prepare':
         get_pre_msg += 1     # 응답을 받은 노드 개수 저장
-        if node_id == primary and get_pre_msg == len(blockchain.nodes):
+        if node_id == primary and get_pre_msg == node_len:
             get_pre_msg = 0
             print("*****GET ALL MESSAGE*****")
             return False
-        elif get_pre_msg == len(blockchain.nodes)-1:
+        elif get_pre_msg == node_len-1:
             get_pre_msg = 0
             print("*****GET ALL MESSAGE*****")
             return False
     elif caller == 'commit':
         get_commit_msg += 1     # 응답을 받은 노드 개수 저장
-        if get_commit_msg == len(blockchain.nodes):
+        if get_commit_msg == node_len:
             get_commit_msg = 0
             print("*****GET ALL MESSAGE*****")
             return False
@@ -92,110 +97,133 @@ def validate_preprepare(preprepare_message):
 
 @app.route('/consensus/request', methods=['POST'])
 def handle_request():
+    global view, node_id, primary, start_time, consensus_failed
     print("~~Request~~")  # Debugging
-    global view, node_id, primary
-    message = request.get_json()
-    if node_id == primary:
-        print('Request > if YES!!')  # Debugging
-        N = len(blockchain.chain) + 1
-        # date와 time 값 추출(JSON 형태)
-        D_m = {
-            "date": message['data']["date"],
-            "time": message['data']["time"]
-        }
-        preprepare_message = {
-            'type': 'PREPREPARE',
-            'view': view,   # 메세지가 전송되는 view
-            'seq': N,       # 요청의 시퀀스 번호
-            'digest': D_m   # 요청 데이터의 요약본
-        }
-        # 모든 노드에 pre-prepare 메세지 전송
-        for node in blockchain.nodes:
-            send(node, preprepare_message)
-    else:
-        return jsonify({'message': '~Not Primary node~'}), 400
+    try:
+        message = request.get_json()
+        if node_id == primary:
+            start_time = time.time()  # 제한 시간 재설정
+            print('Request > if YES!!')  # Debugging
+            N = len(blockchain.chain) + 1
+            # date와 time 값 추출(JSON 형태)
+            D_m = {
+                "date": message['data']["date"],
+                "time": message['data']["time"]
+            }
+            threads = []
+            for node in blockchain.nodes:
+                preprepare_thread = Thread(target=send, args=(node, {
+                    'type': 'PREPREPARE',
+                    'view': view,   # 메세지가 전송되는 view
+                    'seq': N,       # 요청의 시퀀스 번호
+                    'digest': D_m   # 요청 데이터의 요약본
+                }))
+                threads.append(preprepare_thread)
+                preprepare_thread.start()
+        else:
+            return jsonify({'message': '~Not Primary node~'}), 400
+    except Exception as e:
+        consensus_failed = True
+        return jsonify({'message': str(e)}), 500
     return jsonify({'message': 'Pre-prepare message sended'}), 200
 
 
 @app.route('/consensus/preprepare', methods=['POST'])
 def handle_preprepare():  # Primary 노드는 해당 함수 실행 안함
+    global consensus_failed, consensus_done
     print("~~Pre-prepare~~")  # Debugging
     message = request.get_json()
 
-    # pre-prepare 메세지에 대한 검증
-    if validate_preprepare(message):  # 검증방법 재고려 필요 OOOOOOOOOOOOOOO
-        print('preprepare > if YES!!')  # Debugging
-        log.append(message)  # pre-prepare 메세지 수집
+    try:
+        # pre-prepare 메세지에 대한 검증
+        if validate_preprepare(message):  # 검증방법 재고려 필요 OOOOOOOOOOOOOOO
+            print('preprepare > if YES!!')  # Debugging
+            log.append(message)  # pre-prepare 메세지 수집
 
-        # for문을 비동기로 처리
-        threads = []
-        for node in blockchain.nodes:
-            prepare_thread = Thread(target=send, args=(node, {
-                'type': 'PREPARE',
-                'view': view+1,
-                'seq': message['seq'],
-                'digest': message['digest'],
-                'node_id': node_id
-            }))
-            threads.append(prepare_thread)
-            prepare_thread.start()
-
-        # 모든 스레드의 종료를 기다림
-        for thread in threads:
-            thread.join()
-    else:
-        return jsonify({'message': 'Invalid PRE-PREPARE message!'}), 400
+            # for문을 비동기로 처리
+            threads = []
+            for node in blockchain.nodes:
+                prepare_thread = Thread(target=send, args=(node, {
+                    'type': 'PREPARE',
+                    'view': view+1,
+                    'seq': message['seq'],
+                    'digest': message['digest'],
+                    'node_id': node_id
+                }))
+                threads.append(prepare_thread)
+                prepare_thread.start()
+            consensus_done[1] += 1
+        else:
+            consensus_done[1] += 1
+            return jsonify({'message': 'Invalid PRE-PREPARE message!'}), 400
+    except Exception as e:
+        consensus_failed = True
+        return jsonify({'message': str(e)}), 500
     return jsonify({'message': 'Pre-prepare message validated'}), 200
 
 
 @app.route('/consensus/prepare', methods=['POST'])
 def handle_prepare():
-    global prepare_certificate, log
+    global prepare_certificate, log, consensus_failed, consensus_done
     message = request.get_json()
-    log.append(message)         # prepare 메세지 수집
-    if wait_msg('prepare'):  # 모든 노드한테서 메세지를 받을 때까지 기다리기
-        return jsonify({'message': 'Wait the message!'}), 404
-    print("~~PREPARE~~")  # Debugging
-    prepare_msg_list = [m for m in log if m['type'] == 'PREPARE' and m['view']
-                        == message['view'] and m['seq'] == message['seq']]
-    if len(prepare_msg_list) > 2/3 * (len(blockchain.nodes)-1):
-        prepare_certificate = True   # "prepared the request" 상태로 변환
-        # for문을 비동기로 처리
-        threads = []
-        for node in blockchain.nodes:
-            commit_thread = Thread(target=send, args=(node, {
-                'type': 'COMMIT',
-                'view': view+2,
-                'seq': message['seq'],
-                # 'digest': message['digest'],
-                'node_id': node_id
-            }))
-            threads.append(commit_thread)
-            commit_thread.start()
-        # 모든 스레드의 종료를 기다림
-        for thread in threads:
-            thread.join()
-    else:
-        return jsonify({'message': 'Failed prepare step!'}), 400
+    while consensus_done[1] != 1 and node_id != primary:
+        pass
+    try:
+        log.append(message)         # prepare 메세지 수집
+        if wait_msg('prepare'):  # 모든 노드한테서 메세지를 받을 때까지 기다리기
+            consensus_done[2] += 1
+            return jsonify({'message': 'Wait the message!'}), 404
+        print("~~PREPARE~~")  # Debugging
+        prepare_msg_list = [m for m in log if m['type'] == 'PREPARE' and m['view']
+                            == message['view'] and m['seq'] == message['seq']]
+        if len(prepare_msg_list) > 2/3 * (node_len-1):
+            prepare_certificate = True   # "prepared the request" 상태로 변환
+            # for문을 비동기로 처리
+            threads = []
+            for node in blockchain.nodes:
+                commit_thread = Thread(target=send, args=(node, {
+                    'type': 'COMMIT',
+                    'view': view+2,
+                    'seq': message['seq'],
+                    # 'digest': message['digest'],
+                    'node_id': node_id
+                }))
+                threads.append(commit_thread)
+                commit_thread.start()
+            consensus_done[2] += 1
+        else:
+            consensus_done[2] += 1
+            return jsonify({'message': 'Failed prepare step!'}), 400
+    except Exception as e:
+        consensus_failed = True
+        return jsonify({'message': str(e)}), 500
     return jsonify({'message': 'Successed prepare step'}), 200
 
 
 @app.route('/consensus/commit', methods=['POST'])
 def handle_commit():
-    global request_data, log, commit_certificate
-    message = request.get_json()
-    log.append(message)         # commit 메세지 수집
-    if wait_msg('commit'):  # 모든 노드한테서 메세지를 받을 때까지 기다리기
-        return jsonify({'message': 'Wait the message!'}), 404
-    print("~~COMMIT~~")  # Debugging
-    commit_msg_list = [m for m in log if m['type'] == 'COMMIT' and m['view']
-                       == message['view'] and m['seq'] == message['seq']]
-    if len(commit_msg_list) > 2/3 * len(blockchain.nodes):
-        commit_certificate = True   # "commit certificate" 상태로 변환
-    # Prepare Certificate & Commit Certificate 상태가 되었다면 블록 추가 시행
-    if prepare_certificate and commit_certificate:
-        if reply_request():
-            return jsonify({'message': 'Successed commit step!'}), 200
+    global request_data, log, commit_certificate, consensus_failed, consensus_done
+    while consensus_done[2] < node_len-1:
+        pass
+    try:
+        message = request.get_json()
+        log.append(message)         # commit 메세지 수집
+        if wait_msg('commit'):  # 모든 노드한테서 메세지를 받을 때까지 기다리기
+            return jsonify({'message': 'Wait the message!'}), 404
+        print("~~COMMIT~~")  # Debugging
+        commit_msg_list = [m for m in log if m['type'] == 'COMMIT' and m['view']
+                           == message['view'] and m['seq'] == message['seq']]
+        if len(commit_msg_list) > 2/3 * node_len:
+            commit_certificate = True   # "commit certificate" 상태로 변환
+        # Prepare Certificate & Commit Certificate 상태가 되었다면 블록 추가 시행
+        if prepare_certificate and commit_certificate:
+            if reply_request():
+                log = []
+                consensus_done = [1, 0, 0]
+                return jsonify({'message': 'Successed commit step!'}), 200
+    except Exception as e:
+        consensus_failed = True
+        return jsonify({'message': str(e)}), 500
     return jsonify({'message': 'Failed commit step!'}), 400
 
 
@@ -210,7 +238,7 @@ def reply_request():
 
 @app.route('/nodes/register', methods=['POST'])
 def register_nodes():
-    global request_data
+    global request_data, node_len
     values = request.get_json()
     nodes = values.get('nodes')
     if nodes is None:
@@ -222,7 +250,17 @@ def register_nodes():
         'total_nodes': list(blockchain.nodes)
     }
     request_data = None
+    node_len = len(blockchain.nodes)
     return jsonify(response), 201
+
+
+@app.route('/chain/get', methods=['GET'])
+def full_chain():
+    response = {
+        'chain': blockchain.chain,
+        'length': len(blockchain.chain),
+    }
+    return jsonify(response), 200
 
 
 @app.route('/transaction/new', methods=['POST'])
@@ -236,46 +274,53 @@ def new_transaction():
         'data': data
     }
     print(client_request)  # Debugging
-    # prepare 함수가 수행될 수 있게 설정
-    # th_send = Thread(target=send, args=(node_id+port, client_request))
-    # th_send.start()
     send(node_id+port, client_request)
     return jsonify({'message': 'Send Request to node...'}), 201
 
 
-@app.route('/chain/get', methods=['GET'])
-def full_chain():
-    response = {
-        'chain': blockchain.chain,
-        'length': len(blockchain.chain),
-    }
-    return jsonify(response), 200
-
-
-def sync_blocks():
-    while True:
-        if len(blockchain.chain) % 10 == 0 or (time.time() - float(blockchain.chain[-1]['timestamp'])) >= 300:
-            if blockchain.synchronize_node():
-                print("Blockchain synchronized")
-        time.sleep(30)
-
-
-@app.route('/nodes/sync', methods=['GET'])
-def sync():
-    if blockchain.synchronize_node():
-        response = {
-            'message': 'Our chain was replaced',
-            'new_chain': blockchain.chain
-        }
+def find_next_primary():
+    nodes = list(blockchain.nodes)
+    nodes.sort()
+    index = nodes.index(primary)
+    if index == len(nodes) - 1:
+        return nodes[0]
     else:
-        response = {
-            'message': 'Our chain is authoritative',
-            'chain': blockchain.chain
+        return nodes[index + 1]
+
+
+@app.route('/primary/change', methods=['POST'])
+def primary_change():
+    global primary, log
+    message = request.get_json()
+    if message['type'] == 'VIEW_CHANGE':
+        primary = message['new_primary']
+        log = []
+        return jsonify({'message': 'View changed successfully'}), 200
+    return jsonify({'message': 'Wrong Message!'}), 400
+
+
+def primary_change_protocol():
+    global view, primary, consensus_failed, start_time, request_data
+
+    while consensus_failed or (time.time() - start_time) > TIMEOUT:
+        consensus_failed = False  # 합의 실패 플래그 초기화
+        # 새로운 primary 노드 선택
+        primary = find_next_primary()
+        # 새로운 뷰 번호와 primary 노드 정보를 모든 노드에게 알림
+        message = {
+            'type': 'VIEW_CHANGE',
+            'new_primary': primary
         }
-    return jsonify(response), 200
+        for node in blockchain.nodes:
+            response = requests.post(
+                f"http://{node}/primary/change", json=message)
+
+        # 새로운 primary 노드를 기준으로 합의 과정 재시작
+        send(primary, {'type': 'REQUEST', 'data': request_data})
+    time.sleep(1)
 
 
 if __name__ == "__main__":
-    # sync_thread = Thread(target=sync_blocks)
-    # sync_thread.start()
+    view_change_thread = Thread(target=primary_change_protocol)
+    view_change_thread.start()
     app.run(host='0.0.0.0', port=80)
