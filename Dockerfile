@@ -21,8 +21,8 @@ RUN sed -i 's/#PasswordAuthentication yes/PasswordAuthentication yes/' /etc/ssh/
 WORKDIR /app
 
 # 필요한 파일을 복사합니다.
-COPY blockAPI.py .
-COPY blockchain.py .
+COPY blockchain/blockAPI.py .
+COPY blockchain/blockchain.py .
 
 # Flask를 실행하기 위해 필요한 패키지를 설치합니다.
 RUN pip install flask
