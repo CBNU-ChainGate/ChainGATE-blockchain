@@ -1,18 +1,41 @@
-# version: '3'
+version: '3.8'
 
-# services:
-#   flask_app:
-#     build: ./flask_app  # Flask 애플리케이션의 Dockerfile 위치
-#     ports:
-#       - "5000:5000"  # 호스트와 컨테이너 간 포트 매핑
-#     depends_on:
-#       - ssh_server  # SSH 서버 컨테이너가 flask_app 컨테이너보다 먼저 실행됨을 보장
+services:
+  node1:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "5001:5000"
+      - "2221:22"
+    volumes:
+      - ./flask_app:/app  # Flask 애플리케이션 디렉토리 마운트
+    command: ["/bin/sh", "-c", "/usr/sbin/sshd && python3 /app/blockAPI.py"]  # SSH 서버 및 Flask 애플리케이션 실행 명령어
+    environment:
+      - FLASK_ENV=development
 
-#   ssh_server:
-#     image: rastasheep/ubuntu-sshd:18.04  # SSH 서버를 제공하는 Ubuntu 이미지 사용
-#     ports:
-#       - "2222:22"  # SSH 포트 매핑
+  node2:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "5002:5000"
+      - "2222:22"
+    volumes:
+      - ./flask_app:/app  # Flask 애플리케이션 디렉토리 마운트
+    command: ["/bin/sh", "-c", "/usr/sbin/sshd && python3 /app/blockAPI.py"]  # SSH 서버 및 Flask 애플리케이션 실행 명령어
+    environment:
+      - FLASK_ENV=development
 
-#   ubuntu_container:
-#     image: ubuntu:latest  # 최신 Ubuntu 이미지 사용
-#     command: tail -f /dev/null  # 컨테이너가 종료되지 않도록 유지
+  node3:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "5003:5000"
+      - "2223:22"
+    volumes:
+      - ./flask_app:/app  # Flask 애플리케이션 디렉토리 마운트
+    command: ["/bin/sh", "-c", "/usr/sbin/sshd && python3 /app/blockAPI.py"]  # SSH 서버 및 Flask 애플리케이션 실행 명령어
+    environment:
+      - FLASK_ENV=development
