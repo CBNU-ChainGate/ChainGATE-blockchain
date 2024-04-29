@@ -22,8 +22,8 @@ EXPOSE 5000
 
 # Flask 애플리케이션을 위한 디렉토리 생성 및 파일 복사
 WORKDIR /app
-COPY blockAPI.py /app
-COPY blockchain.py /app
+COPY blockchain/blockAPI.py /app
+COPY blockchain/blockchain.py /app
 
 # SSH 서버 시작 및 Flask 애플리케이션 실행
 CMD ["/usr/sbin/sshd", "-D"]
