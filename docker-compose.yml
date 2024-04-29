@@ -8,7 +8,7 @@ services:
     container_name: node1
     networks:
         - app-tier
-    image: ghcr.io/DDongu/chaingate:latest
+    image: ghcr.io/ddongu/chaingate:latest
     build:
       context: .
       dockerfile: Dockerfile
