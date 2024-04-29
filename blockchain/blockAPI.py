@@ -24,6 +24,7 @@ prepare_certificate = False
 commit_certificate = False
 consensus_failed = False
 start_time = time.time()
+consensus_nums = 0
 TIMEOUT = 10
 
 
@@ -300,7 +301,7 @@ def primary_change():
 
 
 def primary_change_protocol():
-    global view, primary, consensus_failed, start_time, request_data
+    global view, primary, consensus_failed, start_time, request_data, consensus_nums
 
     while consensus_failed or (time.time() - start_time) > TIMEOUT:
         consensus_failed = False  # 합의 실패 플래그 초기화
@@ -315,8 +316,13 @@ def primary_change_protocol():
             response = requests.post(
                 f"http://{node}/primary/change", json=message)
 
-        # 새로운 primary 노드를 기준으로 합의 과정 재시작
-        send(primary, {'type': 'REQUEST', 'data': request_data})
+        if consensus_nums > 4:
+            consensus_nums = 0
+            print("Error: The maximum number of requests has been exceeded!")
+        else:
+            # 새로운 primary 노드를 기준으로 합의 과정 재시작
+            consensus_nums += 1
+            send(primary, {'type': 'REQUEST', 'data': request_data})
     time.sleep(1)
 
 
