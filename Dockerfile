@@ -19,6 +19,7 @@ RUN sed -i 's/#PasswordAuthentication yes/PasswordAuthentication yes/' /etc/ssh/
 
 # 포트 열기
 EXPOSE 22
+EXPOSE 80
 
 # Flask 애플리케이션을 위한 작업 디렉토리를 설정합니다.
 WORKDIR /app
