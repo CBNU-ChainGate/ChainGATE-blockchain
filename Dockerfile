@@ -17,6 +17,9 @@ RUN sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/
 RUN sed -i 's/UsePAM yes/UsePAM no/' /etc/ssh/sshd_config
 RUN sed -i 's/#PasswordAuthentication yes/PasswordAuthentication yes/' /etc/ssh/sshd_config
 
+# 포트 열기
+EXPOSE 22
+
 # Flask 애플리케이션을 위한 작업 디렉토리를 설정합니다.
 WORKDIR /app
 
@@ -28,4 +31,4 @@ COPY blockchain/blockchain.py .
 RUN pip install flask
 
 # SSH 서버를 시작합니다.
-CMD ["/usr/sbin/sshd", "-D"]
+# CMD ["/usr/sbin/sshd", "-D"]

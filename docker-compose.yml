@@ -8,43 +8,9 @@ services:
     container_name: node1
     networks:
         - app-tier
-    image: ghcr.io/ddongu/chaingate:latest
     build:
       context: .
       dockerfile: Dockerfile
-    ports:
-      - "5001:5000"
-      - "2221:22"
-    command: ["/bin/sh", "-c", "/usr/sbin/sshd && python3 /app/blockAPI.py"]  # SSH 서버 및 Flask 애플리케이션 실행 명령어
-    environment:
-      - FLASK_ENV=development
-
-  node2:
-    container_name: node1
-    networks:
-        - app-tier
-    image: ghcr.io/DDongu/chaingate:latest
-    build:
-      context: .
-      dockerfile: Dockerfile
-    ports:
-      - "5001:5000"
-      - "2221:22"
-    command: ["/bin/sh", "-c", "/usr/sbin/sshd && python3 /app/blockAPI.py"]  # SSH 서버 및 Flask 애플리케이션 실행 명령어
-    environment:
-      - FLASK_ENV=development
-    
-  node3:
-    container_name: node1
-    networks:
-        - app-tier
-    image: ghcr.io/DDongu/chaingate:latest
-    build:
-      context: .
-      dockerfile: Dockerfile
-    ports:
-      - "5001:5000"
-      - "2221:22"
     command: ["/bin/sh", "-c", "/usr/sbin/sshd && python3 /app/blockAPI.py"]  # SSH 서버 및 Flask 애플리케이션 실행 명령어
     environment:
       - FLASK_ENV=development
