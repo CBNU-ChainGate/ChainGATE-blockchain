@@ -11,6 +11,6 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    command: ["/bin/sh", "-c", "/usr/sbin/sshd && python3 /app/blockAPI.py"]  # SSH 서버 및 Flask 애플리케이션 실행 명령어
+    command: ["/bin/sh", "-c", "/usr/sbin/sshd && sudo python3 /app/blockAPI.py"]  # SSH 서버 및 Flask 애플리케이션 실행 명령어
     environment:
       - FLASK_ENV=development
