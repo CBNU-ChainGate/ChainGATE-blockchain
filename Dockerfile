@@ -29,6 +29,3 @@ COPY blockchain/blockchain.py .
 
 # Flask를 실행하기 위해 필요한 패키지를 설치합니다.
 RUN pip install flask
-
-# SSH 서버를 시작합니다.
-# CMD ["/usr/sbin/sshd", "-D"]
