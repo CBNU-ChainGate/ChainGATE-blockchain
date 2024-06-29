@@ -6,6 +6,7 @@ from config import CSR_URL, CSR_PATH, NODE_CERT_PATH, VERIFY_URL, REVOKE_URL
 class Cert:
     def __init__(self):
         self.cert = None
+        self.csr_cert()
 
     def csr_cert(self):
         with open(CSR_PATH, 'r') as f:
