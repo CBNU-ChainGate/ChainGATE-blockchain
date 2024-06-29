@@ -4,11 +4,13 @@ import requests
 import socket
 import time
 from blockchain import Blockchain
+from cert import Cert
 
 app = Flask(__name__)
 
 local_ip = socket.gethostbyname(socket.gethostname())
 blockchain = Blockchain()
+cert = Cert()
 node_len = 0
 node_id = local_ip  # 어떻게 처리할지 재고려
 port = ""
@@ -29,7 +31,7 @@ TIMEOUT = 10
 
 
 def send(receiver, message):
-    """Send a message to the node through API"""
+    """API를 통해 각 노드에 요청을 보냄"""
     print("receiver: "+receiver)  # Debugging
     if message['type'] == 'REQUEST':
         print("===============REQUEST===============")
