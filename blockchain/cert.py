@@ -1,5 +1,4 @@
 import requests
-from OpenSSL import crypto
 from config import CSR_URL, CSR_PATH, NODE_CERT_PATH, VERIFY_URL, REVOKE_URL
 
 

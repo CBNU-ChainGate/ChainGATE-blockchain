@@ -1,6 +1,6 @@
 import requests
-from OpenSSL import crypto
 from config import CA_ADDRESS
+
 
 def revoke_certificate(cert_pem):
     url = f'http://{CA_ADDRESS}/api/v1/cert/revoke'
@@ -15,6 +15,7 @@ def revoke_certificate(cert_pem):
         print('Failed to revoke certificate.')
         print(response.status_code, response.text)
 
+
 if __name__ == '__main__':
     # 테스트할 인증서 파일 경로
     cert_path = '/home/node1/certs/node_cert.pem'
@@ -25,4 +26,3 @@ if __name__ == '__main__':
 
     # 인증서 파기 요청 보내기
     revoke_certificate(cert_pem)
-

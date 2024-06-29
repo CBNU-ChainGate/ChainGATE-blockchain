@@ -268,6 +268,7 @@ def full_chain():
 
 @app.route('/transaction/new', methods=['POST'])
 def new_transaction():
+    """register nodes"""
     global request_data, state, primary, node_id, port
     data = request.get_json()
     state = 'REQUEST'
