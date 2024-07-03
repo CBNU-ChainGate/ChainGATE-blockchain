@@ -266,10 +266,8 @@ def register_nodes():
 
     if cert.verify_cert(cert_pem):
         node = request.remote_addr
-        print(node)
         blockchain.add_node(node)
     node_len = len(blockchain.nodes)
-    print(blockchain.nodes)
     return jsonify({'message': 'Certificate received successfully'}), 200
 
 
