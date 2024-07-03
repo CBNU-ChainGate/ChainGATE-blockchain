@@ -35,8 +35,9 @@ class Blockchain:
 
     # 노드 추가
     def add_node(self, node):
-        address = urlparse(node)
-        self.nodes.add(address.netloc)
+        # address = urlparse(node)
+        # self.nodes.add(address.netloc)
+        self.nodes.add(node)
 
     # 노드 간의 블록체인 동기화
     def synchronize_node(self):
