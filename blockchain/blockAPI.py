@@ -261,6 +261,7 @@ def reply_request():
 def register_nodes():
     global node_len
     cert_pem = request.json.get('cert')
+    print(cert_pem)
     if not cert_pem:
         return jsonify({'error': 'No certificate data provided'}), 400
 
