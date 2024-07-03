@@ -265,7 +265,6 @@ def register_nodes():
         return jsonify({'error': 'No certificate data provided'}), 400
 
     if cert.verify_cert(cert_pem):
-        # ip 또는 url 추출해서 node 추가
         node = request.remote_addr
         blockchain.add_node(node)
     node_len = len(blockchain.nodes)
