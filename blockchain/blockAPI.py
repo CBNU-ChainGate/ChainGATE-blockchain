@@ -80,8 +80,8 @@ def validate_preprepare(preprepare_message):
     """pre-prepare 메세지가 정상적인 메세지인지 검증"""
     global request_data
 
-    # validate_preprepare를 수행하려면 request_data가 필요하다.
-    # 따라서 request_data가 설정될 때까지 기다린다.
+    # validate_preprepare를 수행하려면 request_data가 필요
+    # 따라서 request_data가 설정될 때까지 기다림
     while not request_data:
         print("Waiting client_request ...")
 
@@ -239,22 +239,38 @@ def reply_request():
     return False
 
 
+# @app.route('/nodes/register', methods=['POST'])
+# def register_nodes():
+#     global request_data, node_len
+#     values = request.get_json()
+#     nodes = values.get('nodes')
+#     if nodes is None:
+#         return "Error: Please supply a valid list of nodes", 400
+#     for node in nodes:
+#         blockchain.add_node(node)
+#     response = {
+#         'message': 'New nodes have been added',
+#         'total_nodes': list(blockchain.nodes)
+#     }
+#     request_data = None
+#     node_len = len(blockchain.nodes)
+#     return jsonify(response), 201
+
+
 @app.route('/nodes/register', methods=['POST'])
 def register_nodes():
-    global request_data, node_len
-    values = request.get_json()
-    nodes = values.get('nodes')
-    if nodes is None:
-        return "Error: Please supply a valid list of nodes", 400
-    for node in nodes:
+    global node_len
+    cert_pem = request.json.get('cert')
+    if not cert_pem:
+        return jsonify({'error': 'No certificate data provided'}), 400
+
+    if cert.verify_cert(cert_pem):
+        # ip 또는 url 추출해서 node 추가
+        node = request.remote_addr
         blockchain.add_node(node)
-    response = {
-        'message': 'New nodes have been added',
-        'total_nodes': list(blockchain.nodes)
-    }
-    request_data = None
     node_len = len(blockchain.nodes)
-    return jsonify(response), 201
+    print(blockchain.nodes)
+    return jsonify({'message': 'Certificate received successfully'}), 200
 
 
 @app.route('/chain/get', methods=['GET'])
