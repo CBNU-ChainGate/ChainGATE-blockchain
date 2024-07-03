@@ -261,7 +261,6 @@ def reply_request():
 def register_nodes():
     global node_len
     cert_pem = request.json.get('cert')
-    print(cert_pem)
     if not cert_pem:
         return jsonify({'error': 'No certificate data provided'}), 400
 
@@ -270,7 +269,7 @@ def register_nodes():
         node = request.remote_addr
         blockchain.add_node(node)
     node_len = len(blockchain.nodes)
-    print(blockchain.nodes)
+    print(node_len)
     return jsonify({'message': 'Certificate received successfully'}), 200
 
 
