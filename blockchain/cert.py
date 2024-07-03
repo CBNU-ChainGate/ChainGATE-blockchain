@@ -14,31 +14,31 @@ class Cert:
         data = {'csr': csr}
         response = requests.post(CSR_URL, json=data)
 
-        # Check if request was successful
         if response.status_code == 200:
-            # Extract certificate from JSON response
+            # 인증서 추출(json)
             cert_pem = response.json().get('certificate')
 
-            # Save certificate to file
+            # 추출한 인증서 저장
             with open(NODE_CERT_PATH, 'w') as cert_file:
                 cert_file.write(cert_pem)
-            # Get certificate from file
+            # 인증서 불러와서 변수에 저장
             with open(NODE_CERT_PATH, 'r') as f:
                 self.cert = f.read()
             print(f"Certificate saved to {NODE_CERT_PATH}")
         else:
             print(f"Failed to request certificate: {response.text}")
 
-    def verify_cert(self):
-        data = {'cert': self.cert}
-        response = requests.post(VERIFY_URL, json=data)
+    def verify_cert(self, cert_pem):
+        response = requests.post(VERIFY_URL, json=cert_pem)
 
         if response.status_code == 200:
             print('Certificate successfully verified.')
             print(response.json())
+            return True
         else:
             print('Failed to verify certificate.')
             print(response.status_code, response.text)
+            return False
 
     def revoke_cert(self):
         data = {'cert': self.cert}
