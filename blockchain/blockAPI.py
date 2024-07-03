@@ -30,6 +30,48 @@ consensus_nums = 0
 TIMEOUT = 10
 
 
+# ==========================================================================================
+# Date: 2024.07.03
+# Writer: Kim Dong Gyu
+# Version: 1.0.0
+# ==========================================================================================
+
+def find_next_primary():
+    nodes = list(blockchain.nodes)
+    nodes.sort()
+    index = nodes.index(primary)
+    if index == len(nodes) - 1:
+        return nodes[0]
+    else:
+        return nodes[index + 1]
+
+
+def primary_change_protocol():
+    global view, primary, consensus_failed, start_time, request_data, consensus_nums
+
+    while consensus_failed or (time.time() - start_time) > TIMEOUT:
+        consensus_failed = False  # 합의 실패 플래그 초기화
+        # 새로운 primary 노드 선택
+        primary = find_next_primary()
+        # 새로운 뷰 번호와 primary 노드 정보를 모든 노드에게 알림
+        message = {
+            'type': 'VIEW_CHANGE',
+            'new_primary': primary
+        }
+        for node in blockchain.nodes:
+            response = requests.post(
+                f"http://{node}/primary/change", json=message)
+
+        if consensus_nums > 4:
+            consensus_nums = 0
+            print("Error: The maximum number of requests has been exceeded!")
+        else:
+            # 새로운 primary 노드를 기준으로 합의 과정 재시작
+            consensus_nums += 1
+            send(primary, {'type': 'REQUEST', 'data': request_data})
+    time.sleep(1)
+
+
 def send(receiver, message):
     """API를 통해 각 노드에 요청을 보냄"""
     print("receiver: "+receiver)  # Debugging
@@ -119,7 +161,7 @@ def handle_request():
                     'type': 'PREPREPARE',
                     'view': view,   # 메세지가 전송되는 view
                     'seq': N,       # 요청의 시퀀스 번호
-                    'digest': D_m   # 요청 데이터의 요약본
+                    'digest': D_m,   # 요청 데이터의 요약본
                 }))
                 threads.append(preprepare_thread)
                 preprepare_thread.start()
@@ -136,13 +178,11 @@ def handle_preprepare():  # Primary 노드는 해당 함수 실행 안함
     global consensus_failed, consensus_done
     print("~~Pre-prepare~~")  # Debugging
     message = request.get_json()
-
     try:
         # pre-prepare 메세지에 대한 검증
         if validate_preprepare(message):  # 검증방법 재고려 필요 OOOOOOOOOOOOOOO
             print('preprepare > if YES!!')  # Debugging
             log.append(message)  # pre-prepare 메세지 수집
-
             # for문을 비동기로 처리
             threads = []
             for node in blockchain.nodes:
@@ -239,24 +279,6 @@ def reply_request():
     return False
 
 
-# @app.route('/nodes/register', methods=['POST'])
-# def register_nodes():
-#     global request_data, node_len
-#     values = request.get_json()
-#     nodes = values.get('nodes')
-#     if nodes is None:
-#         return "Error: Please supply a valid list of nodes", 400
-#     for node in nodes:
-#         blockchain.add_node(node)
-#     response = {
-#         'message': 'New nodes have been added',
-#         'total_nodes': list(blockchain.nodes)
-#     }
-#     request_data = None
-#     node_len = len(blockchain.nodes)
-#     return jsonify(response), 201
-
-
 @app.route('/nodes/register', methods=['POST'])
 def register_nodes():
     global node_len
@@ -296,16 +318,6 @@ def new_transaction():
     return jsonify({'message': 'Send Request to node...'}), 201
 
 
-def find_next_primary():
-    nodes = list(blockchain.nodes)
-    nodes.sort()
-    index = nodes.index(primary)
-    if index == len(nodes) - 1:
-        return nodes[0]
-    else:
-        return nodes[index + 1]
-
-
 @app.route('/primary/change', methods=['POST'])
 def primary_change():
     global primary, log
@@ -315,32 +327,6 @@ def primary_change():
         log = []
         return jsonify({'message': 'View changed successfully'}), 200
     return jsonify({'message': 'Wrong Message!'}), 400
-
-
-def primary_change_protocol():
-    global view, primary, consensus_failed, start_time, request_data, consensus_nums
-
-    while consensus_failed or (time.time() - start_time) > TIMEOUT:
-        consensus_failed = False  # 합의 실패 플래그 초기화
-        # 새로운 primary 노드 선택
-        primary = find_next_primary()
-        # 새로운 뷰 번호와 primary 노드 정보를 모든 노드에게 알림
-        message = {
-            'type': 'VIEW_CHANGE',
-            'new_primary': primary
-        }
-        for node in blockchain.nodes:
-            response = requests.post(
-                f"http://{node}/primary/change", json=message)
-
-        if consensus_nums > 4:
-            consensus_nums = 0
-            print("Error: The maximum number of requests has been exceeded!")
-        else:
-            # 새로운 primary 노드를 기준으로 합의 과정 재시작
-            consensus_nums += 1
-            send(primary, {'type': 'REQUEST', 'data': request_data})
-    time.sleep(1)
 
 
 if __name__ == "__main__":
