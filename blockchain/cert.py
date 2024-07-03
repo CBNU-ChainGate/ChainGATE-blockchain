@@ -29,7 +29,8 @@ class Cert:
             print(f"Failed to request certificate: {response.text}")
 
     def verify_cert(self, cert_pem):
-        response = requests.post(VERIFY_URL, json=cert_pem)
+        data = {'cert': cert_pem}
+        response = requests.post(VERIFY_URL, json=data)
 
         if response.status_code == 200:
             print('Certificate successfully verified.')
