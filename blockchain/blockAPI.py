@@ -272,7 +272,7 @@ def handle_commit():
 
 def reply_request():
     blockchain.add_transaction(request_data)
-    last_block = blockchain.get_lastblock()
+    last_block = blockchain.last_block
     if blockchain.create_block(blockchain.hash(last_block)):
         print(f"** Node [{node_id}] added a new block **")
         return True
