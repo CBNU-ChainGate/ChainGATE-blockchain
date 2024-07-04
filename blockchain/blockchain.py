@@ -45,7 +45,7 @@ class Blockchain:
                 "position": self.pending_transactions.get('position'),
                 "time": self.pending_transactions.get('time')
             }
-            self.pending_transactions = []
+            self.pending_transactions = {}
             self.chain.append(block)
             self.last_block = block
             return True
