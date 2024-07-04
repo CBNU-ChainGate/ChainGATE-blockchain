@@ -24,7 +24,7 @@ class Blockchain:
     """블록체인 정의"""
 
     def __init__(self):
-        # self.chain = []
+        self.chain = []
         self.last_block = {}
         self.pending_transactions = {}
         self.nodes = set()
