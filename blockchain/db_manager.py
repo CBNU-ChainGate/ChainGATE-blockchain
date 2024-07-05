@@ -1,6 +1,7 @@
 import mysql.connector
 from mysql.connector import Error
 
+
 class MySQLManager:
     def __init__(self, host, user, password, database):
         self.host = host
@@ -49,12 +50,41 @@ class MySQLManager:
         finally:
             cursor.close()
 
-# Usage example (uncomment to test directly):
-# if __name__ == "__main__":
-#     db_manager = MySQLManager(host="localhost", user="root", password="password", database="test_db")
-#     db_manager.connect()
-#     db_manager.execute_query("CREATE TABLE IF NOT EXISTS example (id INT AUTO_INCREMENT PRIMARY KEY, name VARCHAR(255))")
-#     db_manager.execute_query("INSERT INTO example (name) VALUES (%s)", ("John Doe",))
-#     results = db_manager.fetch_query("SELECT * FROM example")
-#     print(results)
-#     db_manager.close()
+    def get_total_count(self):
+        query = "SELECT COUNT(*) FROM entrance_log"
+        result = self.fetch_query(query)
+        if result:
+            return result[0][0]
+        else:
+            return 0
+
+    def insert_entrance_log(self, previous_hash, timestamp, date, department, name, position, time):
+        insert_query = """
+        INSERT INTO entrance_log (previous_hash, timestamp, date, department, name, position, time)
+        VALUES (%s, %s, %s, %s, %s, %s, %s)
+        """
+        self.execute_query(insert_query, (previous_hash,
+                           timestamp, date, department, name, position, time))
+
+    def search_data(self, date=None, name=None, department=None):
+        query = "SELECT * FROM entrance_log"
+        conditions = []
+        params = []
+
+        if date:
+            conditions.append("date = %s")
+            params.append(date)
+        if name:
+            conditions.append("name = %s")
+            params.append(name)
+        if department:
+            conditions.append("department = %s")
+            params.append(department)
+
+        if conditions:
+            query += " WHERE " + " AND ".join(conditions)
+        else:
+            return None
+
+        results = self.fetch_query(query, tuple(params))
+        return results
