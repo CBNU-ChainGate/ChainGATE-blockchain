@@ -2,22 +2,12 @@ import hashlib
 import json
 import time
 from urllib.parse import urlparse
-# import requests
 from db_manager import MySQLManager
 from config import DB_LOCALHOST, DB_USER, DB_PASS, DB_DATABASE
 
 db_manager = MySQLManager(
     host=DB_LOCALHOST, user=DB_USER, password=DB_PASS, database=DB_DATABASE)
 db_manager.connect()
-
-# # 데이터 삽입 예제
-# db_manager.execute_query("INSERT INTO example (name) VALUES (%s)", ("Alice",))
-# db_manager.execute_query("INSERT INTO example (name) VALUES (%s)", ("Bob",))
-
-# # 데이터 조회 예제
-# results = db_manager.fetch_query("SELECT * FROM example")
-# for row in results:
-#     print(row)
 
 
 class Blockchain:
@@ -42,7 +32,6 @@ class Blockchain:
             block = {
                 'timestamp': time.time(),
                 'previous_hash': previous_hash,
-                # 'transactions': self.pending_transactions,
                 "date": self.pending_transactions.get('date'),
                 "department": self.pending_transactions.get('department'),
                 "name": self.pending_transactions.get('name'),
@@ -50,7 +39,6 @@ class Blockchain:
                 "time": self.pending_transactions.get('time')
             }
             self.pending_transactions = {}
-            # self.chain.append(block)
             db_manager.insert_entrance_log(block['previous_hash'], block['timestamp'], block['date'],
                                            block['department'], block['name'], block['position'], block['time'])
 
@@ -60,13 +48,10 @@ class Blockchain:
 
     # 트랜젝션 추가
     def add_transaction(self, data):
-        # self.pending_transactions.append(data)
         self.pending_transactions = data
 
     # 노드 추가
     def add_node(self, node):
-        # address = urlparse(node)
-        # self.nodes.add(address.netloc)
         self.nodes.add(node)
 
     def get_block_total(self):
@@ -77,8 +62,6 @@ class Blockchain:
         for result in results:
             result['date'] = str(result['date'])
             result['time'] = str(result['time'])
-        print("DB Eesults: ", end='')  # debugging
-        print(results)  # debugging
         return results
 
     # # 노드 간의 블록체인 동기화
@@ -102,8 +85,3 @@ class Blockchain:
     #         self.chain = new_chain
     #         return True
     #     return False
-
-    # def get_lastblock(self):
-    #     if len(self.chain) == 0:
-    #         return 0
-    #     return self.chain[-1]

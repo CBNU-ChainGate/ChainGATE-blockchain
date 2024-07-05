@@ -53,8 +53,6 @@ class MySQLManager:
     def get_total_count(self):
         query = "SELECT COUNT(*) FROM entrance_log"
         result = self.fetch_query(query)
-        print("total: ", end='')  # debugging
-        print(result)  # debugging
         if result:
             return result[0]['COUNT(*)']
         else:
