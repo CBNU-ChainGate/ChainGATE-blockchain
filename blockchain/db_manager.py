@@ -69,7 +69,7 @@ class MySQLManager:
                            timestamp, date, department, name, position, time))
 
     def search_data(self, date=None, name=None, department=None):
-        query = "SELECT * FROM entrance_log"
+        query = "SELECT date, time, name, department, position FROM entrance_log"
         conditions = []
         params = []
 
