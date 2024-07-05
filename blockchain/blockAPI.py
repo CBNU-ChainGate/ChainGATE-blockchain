@@ -282,18 +282,18 @@ def reply_request():
     return False
 
 
-# @app.route('/nodes/register', methods=['POST'])
-# def register_nodes():
-#     global node_len
-#     cert_pem = request.json.get('cert')
-#     if not cert_pem:
-#         return jsonify({'error': 'No certificate data provided'}), 400
+@app.route('/nodes/register', methods=['POST'])
+def register_nodes():
+    global node_len
+    cert_pem = request.json.get('cert')
+    if not cert_pem:
+        return jsonify({'error': 'No certificate data provided'}), 400
 
-#     if cert.verify_cert(cert_pem):
-#         node = request.remote_addr
-#         blockchain.add_node(node)
-#     node_len = len(blockchain.nodes)
-#     return jsonify({'message': 'Certificate received successfully'}), 200
+    if cert.verify_cert(cert_pem):
+        node = request.remote_addr
+        blockchain.add_node(node)
+    node_len = len(blockchain.nodes)
+    return jsonify({'message': 'Certificate received successfully'}), 200
 
 
 @app.route('/chain/search', methods=['POST'])
