@@ -89,22 +89,4 @@ class MySQLManager:
             return None
 
         results = self.fetch_query(query, tuple(params))
-        formatted_results = self.format_results(results)  # 추가된 부분
-
-        return formatted_results
-
-    def format_results(self, results):
-        formatted = []
-        for row in results:
-            date_str = row['date'].strftime(
-                '%Y-%m-%d') if row['date'] else None
-            time_str = row['time'].strftime(
-                '%H:%M:%S') if row['time'] else None
-            formatted.append({
-                'date': date_str,
-                'time': time_str,
-                'name': row['name'],
-                'department': row['department'],
-                'position': row['position']
-            })
-        return formatted
+        return results

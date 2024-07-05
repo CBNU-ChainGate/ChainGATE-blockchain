@@ -73,7 +73,10 @@ class Blockchain:
         return db_manager.get_total_count()
 
     def search_block(self, date, name, department):
-        return db_manager.search_data(date, name, department)
+        results = db_manager.search_data(date, name, department)
+        print("DB Eesults: ", end='')  # debugging
+        print(results)  # debugging
+        return results
 
     # # 노드 간의 블록체인 동기화
     # def synchronize_node(self):
