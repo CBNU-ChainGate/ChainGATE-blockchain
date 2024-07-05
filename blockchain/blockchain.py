@@ -2,7 +2,7 @@ import hashlib
 import json
 import time
 from urllib.parse import urlparse
-import requests
+# import requests
 from db_manager import MySQLManager
 from config import DB_LOCALHOST, DB_USER, DB_PASS, DB_DATABASE
 
@@ -74,6 +74,9 @@ class Blockchain:
 
     def search_block(self, date, name, department):
         results = db_manager.search_data(date, name, department)
+        for result in results:
+            result['date'] = str(result['date'])
+            result['time'] = str(result['time'])
         print("DB Eesults: ", end='')  # debugging
         print(results)  # debugging
         return results
