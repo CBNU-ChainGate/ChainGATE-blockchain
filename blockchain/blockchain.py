@@ -51,7 +51,7 @@ class Blockchain:
             }
             self.pending_transactions = {}
             # self.chain.append(block)
-            db_manager.insert_entrance_log(block['timestamp'], block['previous_hash'], block['date'],
+            db_manager.insert_entrance_log(block['previous_hash'], block['timestamp'], block['date'],
                                            block['department'], block['name'], block['position'], block['time'])
 
             self.last_block = block
