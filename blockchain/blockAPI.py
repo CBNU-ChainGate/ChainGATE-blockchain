@@ -151,6 +151,8 @@ def handle_request():
             print('Request > if YES!!')  # Debugging
             blockchain.len = blockchain.get_block_total()
             N = blockchain.len + 1
+            print("len: ", end='')
+            print(blockchain.len)
             # date와 time 값 추출(JSON 형태)
             D_m = {
                 "date": message['data']["date"],
@@ -280,18 +282,18 @@ def reply_request():
     return False
 
 
-@app.route('/nodes/register', methods=['POST'])
-def register_nodes():
-    global node_len
-    cert_pem = request.json.get('cert')
-    if not cert_pem:
-        return jsonify({'error': 'No certificate data provided'}), 400
+# @app.route('/nodes/register', methods=['POST'])
+# def register_nodes():
+#     global node_len
+#     cert_pem = request.json.get('cert')
+#     if not cert_pem:
+#         return jsonify({'error': 'No certificate data provided'}), 400
 
-    if cert.verify_cert(cert_pem):
-        node = request.remote_addr
-        blockchain.add_node(node)
-    node_len = len(blockchain.nodes)
-    return jsonify({'message': 'Certificate received successfully'}), 200
+#     if cert.verify_cert(cert_pem):
+#         node = request.remote_addr
+#         blockchain.add_node(node)
+#     node_len = len(blockchain.nodes)
+#     return jsonify({'message': 'Certificate received successfully'}), 200
 
 
 @app.route('/chain/search', methods=['POST'])
