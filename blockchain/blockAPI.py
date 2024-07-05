@@ -304,7 +304,7 @@ def search_chain():
         data['date'], data['name'], data['department'])
     if not results:
         return jsonify({'error': 'No matching records found'}), 404
-    # return jsonify({'results': results}), 200
+    return jsonify({'results': results}), 200
 
 
 @app.route('/chain/get', methods=['GET'])
