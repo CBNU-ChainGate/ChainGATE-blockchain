@@ -135,7 +135,7 @@ def validate_preprepare(preprepare_message):
     if D_m != preprepare_message['digest']:
         return False
     # 메세지의 view나 seq의 값에 이상이 있다면
-    if preprepare_message['view'] != view or preprepare_message['seq'] != len(blockchain.chain)+1:
+    if preprepare_message['view'] != view or preprepare_message['seq'] != blockchain.len+1:
         return False
     return True
 
@@ -149,7 +149,8 @@ def handle_request():
         if node_id == primary:
             start_time = time.time()  # 제한 시간 재설정
             print('Request > if YES!!')  # Debugging
-            N = len(blockchain.chain) + 1
+            blockchain.len = blockchain.get_block_total()
+            N = blockchain.len + 1
             # date와 time 값 추출(JSON 형태)
             D_m = {
                 "date": message['data']["date"],
@@ -291,6 +292,16 @@ def register_nodes():
         blockchain.add_node(node)
     node_len = len(blockchain.nodes)
     return jsonify({'message': 'Certificate received successfully'}), 200
+
+
+@app.route('/chain/search', methods=['GET'])
+def search_chain():
+    data = request.get_json()
+    results = blockchain.search_block(
+        data['date'], data['name'], data['department'])
+    if not results:
+        return jsonify({'error': 'No matching records found'}), 404
+    return jsonify({'results': results}), 200
 
 
 @app.route('/chain/get', methods=['GET'])
