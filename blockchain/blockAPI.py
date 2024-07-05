@@ -94,7 +94,7 @@ def send(receiver, message):
         print("===============COMMIT===============")
         response = requests.post(
             f"http://{receiver}/consensus/commit", json=message)
-    print(response)  # debugging
+    print(response.json())  # debugging
 
 
 def wait_msg(caller):
