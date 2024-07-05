@@ -59,6 +59,8 @@ class Blockchain:
 
     def search_block(self, date, name, department):
         results = db_manager.search_data(date, name, department)
+        if not result:
+            return False
         for result in results:
             result['date'] = str(result['date'])
             result['time'] = str(result['time'])

@@ -84,7 +84,7 @@ class MySQLManager:
         if conditions:
             query += " WHERE " + " AND ".join(conditions)
         else:
-            return None
+            return False
 
         results = self.fetch_query(query, tuple(params))
         return results
