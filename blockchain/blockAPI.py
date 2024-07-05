@@ -94,7 +94,7 @@ def send(receiver, message):
         print("===============COMMIT===============")
         response = requests.post(
             f"http://{receiver}/consensus/commit", json=message)
-    print(response)
+    print(response)  # debugging
 
 
 def wait_msg(caller):
@@ -152,8 +152,8 @@ def handle_request():
             print('Request > if YES!!')  # Debugging
             blockchain.len = blockchain.get_block_total()
             N = blockchain.len + 1
-            print("len: ", end='')
-            print(blockchain.len)
+            print("len: ", end='')  # debugging
+            print(blockchain.len)  # debugging
             # date와 time 값 추출(JSON 형태)
             D_m = {
                 "date": message['data']["date"],
