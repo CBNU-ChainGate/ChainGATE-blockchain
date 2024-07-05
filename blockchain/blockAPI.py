@@ -294,7 +294,7 @@ def register_nodes():
     return jsonify({'message': 'Certificate received successfully'}), 200
 
 
-@app.route('/chain/search', methods=['GET'])
+@app.route('/chain/search', methods=['POST'])
 def search_chain():
     data = request.get_json()
     results = blockchain.search_block(
