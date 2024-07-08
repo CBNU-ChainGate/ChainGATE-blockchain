@@ -25,13 +25,11 @@ get_pre_msg = 0  # prepare 요청을 받은 수
 get_commit_msg = 0  # commit 요청을 받은 수
 prepare_certificate = False
 commit_certificate = False
-consensus_failed = False
 start_time = time.time()
 consensus_nums = 0
-# TIMEOUT = 10
-TIMEOUT = 1  # primary change protocol Test
+TIMEOUT = 10
 
-blockchain.add_node(node_id)
+blockchain.add_node(node_id)  # 본인 IP를 노드에 추가
 
 # ==========================================================================================
 # Date: 2024.07.03
@@ -43,38 +41,35 @@ blockchain.add_node(node_id)
 def changing_primary():
     global primary_N, primary
     primary_N = (primary_N+1) % len(blockchain.nodes)
-    primary = list(blockchain.nodes)[changing_primary()]
+    primary = list(blockchain.nodes)[primary_N]
     print(f'Primary Node is "{primary}"')
 
 
 def primary_change_protocol():
-    global view, primary, consensus_failed, start_time, request_data, consensus_nums
+    global view, primary, start_time, request_data, consensus_nums
 
-    while consensus_failed or (time.time() - start_time) > TIMEOUT:
-        consensus_failed = False  # 합의 실패 플래그 초기화
+    # 새로운 primary 노드 선택
+    changing_primary()
 
-        # 새로운 primary 노드 선택
-        changing_primary()
+    # 새로운 뷰 번호와 primary 노드 정보를 모든 노드에게 알림
+    message = {
+        'type': 'VIEW_CHANGE',
+        'new_primary': primary
+    }
+    for node in blockchain.nodes:
+        if node == node_id:
+            continue
+        response = requests.post(
+            f"http://{node}/primary/change", json=message)
+        print(response)
 
-        # 새로운 뷰 번호와 primary 노드 정보를 모든 노드에게 알림
-        message = {
-            'type': 'VIEW_CHANGE',
-            'new_primary': primary
-        }
-        for node in blockchain.nodes:
-            if node == node_id:
-                continue
-            response = requests.post(
-                f"http://{node}/primary/change", json=message)
-
-        if consensus_nums > 4:
-            consensus_nums = 0
-            print("Error: The maximum number of requests has been exceeded!")
-        else:
-            # 새로운 primary 노드를 기준으로 합의 과정 재시작
-            consensus_nums += 1
-            send(primary, {'type': 'REQUEST', 'data': request_data})
-    time.sleep(1)
+    if consensus_nums > 4:
+        consensus_nums = 0
+        print("Error: The maximum number of requests has been exceeded!")
+    else:
+        # 새로운 primary 노드를 기준으로 합의 과정 재시작
+        consensus_nums += 1
+        send(primary, {'type': 'REQUEST', 'data': request_data})
 
 
 def send(receiver, message):
@@ -148,7 +143,7 @@ def validate_preprepare(preprepare_message):
 
 @app.route('/consensus/request', methods=['POST'])
 def handle_request():
-    global view, node_id, primary, start_time, consensus_failed
+    global view, node_id, primary, start_time
     print("~~Request~~")  # Debugging
     try:
         message = request.get_json()
@@ -179,14 +174,14 @@ def handle_request():
         else:
             return jsonify({'message': '~Not Primary node~'}), 400
     except Exception as e:
-        consensus_failed = True
+        primary_change_protocol()
         return jsonify({'message': str(e)}), 500
     return jsonify({'message': 'Pre-prepare message sended'}), 200
 
 
 @app.route('/consensus/preprepare', methods=['POST'])
 def handle_preprepare():  # Primary 노드는 해당 함수 실행 안함
-    global consensus_failed, consensus_done
+    global consensus_done
     print("~~Pre-prepare~~")  # Debugging
     message = request.get_json()
     try:
@@ -213,14 +208,14 @@ def handle_preprepare():  # Primary 노드는 해당 함수 실행 안함
             consensus_done[1] += 1
             return jsonify({'message': 'Invalid PRE-PREPARE message!'}), 400
     except Exception as e:
-        consensus_failed = True
+        primary_change_protocol()
         return jsonify({'message': str(e)}), 500
     return jsonify({'message': 'Pre-prepare message validated'}), 200
 
 
 @app.route('/consensus/prepare', methods=['POST'])
 def handle_prepare():
-    global prepare_certificate, log, consensus_failed, consensus_done
+    global prepare_certificate, log, consensus_done
     message = request.get_json()
     while consensus_done[1] != 1 and node_id != primary:
         pass
@@ -253,14 +248,14 @@ def handle_prepare():
             consensus_done[2] += 1
             return jsonify({'message': 'Failed prepare step!'}), 400
     except Exception as e:
-        consensus_failed = True
+        primary_change_protocol()
         return jsonify({'message': str(e)}), 500
     return jsonify({'message': 'Successed prepare step'}), 200
 
 
 @app.route('/consensus/commit', methods=['POST'])
 def handle_commit():
-    global request_data, log, commit_certificate, consensus_failed, consensus_done
+    global request_data, log, commit_certificate, consensus_done
     while consensus_done[2] < node_len-1:
         pass
     try:
@@ -280,12 +275,15 @@ def handle_commit():
                 consensus_done = [1, 0, 0]
                 return jsonify({'message': 'Successed commit step!'}), 200
     except Exception as e:
-        consensus_failed = True
+        primary_change_protocol()
         return jsonify({'message': str(e)}), 500
     return jsonify({'message': 'Failed commit step!'}), 400
 
 
 def reply_request():
+    if start_time - time.time() > TIMEOUT:
+        primary_change_protocol()
+        return False
     blockchain.add_transaction(request_data)
     last_block = blockchain.last_block
     if blockchain.create_block(blockchain.hash(last_block)):
@@ -306,6 +304,8 @@ def register_nodes():
         blockchain.add_node(node)
     node_len = len(blockchain.nodes)
     primary = list(blockchain.nodes)[primary_N]
+    print("Nodes: ", end='')  # debugging
+    print(blockchain.nodes)  # debugging
     return jsonify({'message': 'Certificate received successfully'}), 200
 
 
@@ -339,7 +339,7 @@ def new_transaction():
         'type': 'REQUEST',
         'data': data
     }
-    print(client_request)  # Debugging
+    # print(client_request)  # Debugging
     send(node_id+port, client_request)
     return jsonify({'message': 'Send Request to node...'}), 201
 
