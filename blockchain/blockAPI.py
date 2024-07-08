@@ -12,7 +12,7 @@ app = Flask(__name__)
 sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 sock.connect(("google.com", 443))
 local_ip = sock.getsockname()[0]
-
+print(local_ip)
 blockchain = Blockchain()
 cert = Cert()
 node_len = 0
