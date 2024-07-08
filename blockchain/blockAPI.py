@@ -139,6 +139,10 @@ def validate_preprepare(preprepare_message):
     # 메세지의 view나 seq의 값에 이상이 있다면
     if preprepare_message['view'] != view or preprepare_message['seq'] != blockchain.len+1:
         print("validate_preprepare 2단계 실패")
+        print(preprepare_message['view'])
+        print(view)
+        print(preprepare_message['seq'])
+        print(blockchain.len+1)
         return False
     return True
 
