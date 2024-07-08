@@ -52,7 +52,7 @@ def changing_primary():
 
 def primary_change_protocol():
     global view, primary, start_time, request_data, consensus_nums
-
+    return
     # 새로운 primary 노드 선택
     changing_primary()
 
@@ -367,4 +367,6 @@ def primary_change():
 
 
 if __name__ == "__main__":
+    view_change_thread = Thread(target=primary_change_protocol)
+    view_change_thread.start()
     app.run(host='0.0.0.0', port=80)
