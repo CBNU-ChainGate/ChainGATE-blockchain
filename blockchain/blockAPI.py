@@ -8,7 +8,11 @@ from cert import Cert
 
 app = Flask(__name__)
 
-local_ip = socket.gethostbyname(socket.gethostname())
+# 로컬 IP 가져오기
+sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+sock.connect(("google.com", 443))
+local_ip = sock.getsockname()[0]
+
 blockchain = Blockchain()
 cert = Cert()
 node_len = 0
