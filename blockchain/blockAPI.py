@@ -12,14 +12,13 @@ app = Flask(__name__)
 sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 sock.connect(("google.com", 443))
 local_ip = sock.getsockname()[0]
-print(local_ip)
+
 blockchain = Blockchain()
 cert = Cert()
 node_len = 0
 node_id = local_ip  # 어떻게 처리할지 재고려
 port = ""
-primary = "192.168.0.28"  # primary 정하는 알고리즘 추가 필요
-primary_N = 0
+primary = "192.168.0.31"  # primary 정하는 알고리즘 추가 필요
 state = 'IDLE'
 view = 0
 log = []
@@ -34,7 +33,6 @@ start_time = time.time()
 consensus_nums = 0
 TIMEOUT = 10
 
-# blockchain.add_node(node_id)  # 본인 IP를 노드에 추가
 
 # ==========================================================================================
 # Date: 2024.07.03
@@ -42,39 +40,41 @@ TIMEOUT = 10
 # Version: 1.0.0
 # ==========================================================================================
 
-
-def changing_primary():
-    global primary_N, primary
-    primary_N = (primary_N+1) % len(blockchain.nodes)
-    primary = sorted(blockchain.nodes)[primary_N]
-    print(f'Primary Node is "{primary}"')
+def find_next_primary():
+    nodes = list(blockchain.nodes)
+    nodes.sort()
+    index = nodes.index(primary)
+    if index == len(nodes) - 1:
+        return nodes[0]
+    else:
+        return nodes[index + 1]
 
 
 def primary_change_protocol():
-    global view, primary, start_time, request_data, consensus_nums
-    return
-    # 새로운 primary 노드 선택
-    changing_primary()
+    global view, primary, consensus_failed, start_time, request_data, consensus_nums
 
-    # 새로운 뷰 번호와 primary 노드 정보를 모든 노드에게 알림
-    message = {
-        'type': 'VIEW_CHANGE',
-        'new_primary': primary
-    }
-    for node in blockchain.nodes:
-        if node == node_id:
-            continue
-        response = requests.post(
-            f"http://{node}/primary/change", json=message)
-        print(response)
+    while consensus_failed or (time.time() - start_time) > TIMEOUT:
+        consensus_failed = False  # 합의 실패 플래그 초기화
+        # 새로운 primary 노드 선택
+        primary = find_next_primary()
+        # 새로운 뷰 번호와 primary 노드 정보를 모든 노드에게 알림
+        message = {
+            'type': 'VIEW_CHANGE',
+            'new_primary': primary
+        }
+        for node in blockchain.nodes:
+            response = requests.post(
+                f"http://{node}/primary/change", json=message)
+            print(response)
 
-    if consensus_nums > 4:
-        consensus_nums = 0
-        print("Error: The maximum number of requests has been exceeded!")
-    else:
-        # 새로운 primary 노드를 기준으로 합의 과정 재시작
-        consensus_nums += 1
-        send(primary, {'type': 'REQUEST', 'data': request_data})
+        if consensus_nums > 4:
+            consensus_nums = 0
+            print("Error: The maximum number of requests has been exceeded!")
+        else:
+            # 새로운 primary 노드를 기준으로 합의 과정 재시작
+            consensus_nums += 1
+            send(primary, {'type': 'REQUEST', 'data': request_data})
+    time.sleep(1)
 
 
 def send(receiver, message):
@@ -172,8 +172,6 @@ def handle_request():
             }
             threads = []
             for node in blockchain.nodes:
-                # if node == node_id:
-                # continue
                 preprepare_thread = Thread(target=send, args=(node, {
                     'type': 'PREPREPARE',
                     'view': view,   # 메세지가 전송되는 view
@@ -203,8 +201,6 @@ def handle_preprepare():  # Primary 노드는 해당 함수 실행 안함
             # for문을 비동기로 처리
             threads = []
             for node in blockchain.nodes:
-                # if node == node_id:
-                # continue
                 prepare_thread = Thread(target=send, args=(node, {
                     'type': 'PREPARE',
                     'view': view+1,
@@ -243,8 +239,6 @@ def handle_prepare():
             # for문을 비동기로 처리
             threads = []
             for node in blockchain.nodes:
-                # if node == node_id:
-                # continue
                 commit_thread = Thread(target=send, args=(node, {
                     'type': 'COMMIT',
                     'view': view+2,
@@ -302,7 +296,7 @@ def reply_request():
 
 @app.route('/nodes/register', methods=['POST'])
 def register_nodes():
-    global node_len, primary, primary_N
+    global node_len
     cert_pem = request.json.get('cert')
     if not cert_pem:
         return jsonify({'error': 'No certificate data provided'}), 400
@@ -311,13 +305,6 @@ def register_nodes():
         node = request.remote_addr
         blockchain.add_node(node)
     node_len = len(blockchain.nodes)
-
-    # nodes = sorted(blockchain.nodes)
-    # primary = nodes[primary_N]
-    print("Nodes: ", end='')  # debugging
-    print(blockchain.nodes)  # debugging
-    print("Primary node: ", end='')  # debugging
-    print(primary)  # debugging
     return jsonify({'message': 'Certificate received successfully'}), 200
 
 
@@ -331,12 +318,13 @@ def search_chain():
     return jsonify({'results': results}), 200
 
 
-@app.route('/chain/get', methods=['GET'])
-def full_chain():
-    result = blockchain.get_block_total()
-    print("Data Total: ", end='')
-    print(result)
-    return jsonify(result), 200
+# @app.route('/chain/get', methods=['GET'])
+# def full_chain():
+#     response = {
+#         'chain': blockchain.chain,
+#         'length': len(blockchain.chain),
+#     }
+#     return jsonify(response), 200
 
 
 @app.route('/transaction/new', methods=['POST'])
