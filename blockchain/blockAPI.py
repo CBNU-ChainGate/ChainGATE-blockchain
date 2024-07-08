@@ -308,7 +308,7 @@ def register_nodes():
         blockchain.add_node(node)
     node_len = len(blockchain.nodes)
 
-    blockchain.nodes = list(blockchain.nodes).sort()
+    blockchain.nodes = sorted(blockchain.nodes)
     primary = blockchain.nodes[primary_N]
     blockchain.nodes = set(blockchain.nodes)
     print("Nodes: ", end='')  # debugging
