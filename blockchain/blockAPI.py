@@ -151,10 +151,10 @@ def handle_request():
     print("~~Request~~")  # Debugging
     try:
         message = request.get_json()
+        blockchain.len = blockchain.get_block_total()
         if node_id == primary:
             start_time = time.time()  # 제한 시간 재설정
             print('Request > if YES!!')  # Debugging
-            blockchain.len = blockchain.get_block_total()
             N = blockchain.len + 1
             print("len: ", end='')  # debugging
             print(blockchain.len)  # debugging
