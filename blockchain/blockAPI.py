@@ -34,12 +34,15 @@ start_time = time.time()
 consensus_nums = 0
 TIMEOUT = 10
 
+# 본인 IP를 노드에 추가
+blockchain.add_node(node_id)
 
 # ==========================================================================================
 # Date: 2024.07.03
 # Writer: Kim Dong Gyu
 # Version: 1.0.0
 # ==========================================================================================
+
 
 def find_next_primary():
     nodes = list(blockchain.nodes)
