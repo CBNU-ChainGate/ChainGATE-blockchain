@@ -333,9 +333,10 @@ def search_chain():
 
 @app.route('/chain/get', methods=['GET'])
 def full_chain():
+    result = blockchain.get_block_total()
     print("Data Total: ", end='')
-    print(blockchain.get_block_total())
-    return jsonify("..."), 200
+    print(result)
+    return jsonify(result), 200
 
 
 @app.route('/transaction/new', methods=['POST'])
