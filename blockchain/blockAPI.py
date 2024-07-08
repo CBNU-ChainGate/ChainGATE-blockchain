@@ -309,12 +309,12 @@ def register_nodes():
         blockchain.add_node(node)
     node_len = len(blockchain.nodes)
 
-    nodes = sorted(blockchain.nodes)
-    primary = nodes[primary_N]
-    print("Nodes: ", end='')  # debugging
-    print(blockchain.nodes)  # debugging
-    print("Primary node: ", end='')  # debugging
-    print(primary)  # debugging
+    # nodes = sorted(blockchain.nodes)
+    # primary = nodes[primary_N]
+    # print("Nodes: ", end='')  # debugging
+    # print(blockchain.nodes)  # debugging
+    # print("Primary node: ", end='')  # debugging
+    # print(primary)  # debugging
     return jsonify({'message': 'Certificate received successfully'}), 200
 
 
