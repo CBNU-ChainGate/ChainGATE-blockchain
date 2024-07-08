@@ -172,8 +172,8 @@ def handle_request():
             }
             threads = []
             for node in blockchain.nodes:
-                if node == node_id:
-                    continue
+                # if node == node_id:
+                # continue
                 preprepare_thread = Thread(target=send, args=(node, {
                     'type': 'PREPREPARE',
                     'view': view,   # 메세지가 전송되는 view
@@ -203,8 +203,8 @@ def handle_preprepare():  # Primary 노드는 해당 함수 실행 안함
             # for문을 비동기로 처리
             threads = []
             for node in blockchain.nodes:
-                if node == node_id:
-                    continue
+                # if node == node_id:
+                # continue
                 prepare_thread = Thread(target=send, args=(node, {
                     'type': 'PREPARE',
                     'view': view+1,
@@ -243,8 +243,8 @@ def handle_prepare():
             # for문을 비동기로 처리
             threads = []
             for node in blockchain.nodes:
-                if node == node_id:
-                    continue
+                # if node == node_id:
+                # continue
                 commit_thread = Thread(target=send, args=(node, {
                     'type': 'COMMIT',
                     'view': view+2,
