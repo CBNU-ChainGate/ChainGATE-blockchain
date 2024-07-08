@@ -308,7 +308,7 @@ def register_nodes():
     if cert.verify_cert(cert_pem):
         node = request.remote_addr
         blockchain.add_node(node)
-    node_len = len(blockchain.nodes)
+    node_len = len(blockchain.nodes) - 1
 
     nodes = sorted(blockchain.nodes)
     primary = nodes[primary_N]
