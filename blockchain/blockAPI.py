@@ -318,13 +318,10 @@ def search_chain():
     return jsonify({'results': results}), 200
 
 
-# @app.route('/chain/get', methods=['GET'])
-# def full_chain():
-#     response = {
-#         'chain': blockchain.chain,
-#         'length': len(blockchain.chain),
-#     }
-#     return jsonify(response), 200
+@app.route('/chain/get', methods=['GET'])
+def full_chain():
+    result = blockchain.get_block_total()
+    return jsonify(result), 200
 
 
 @app.route('/transaction/new', methods=['POST'])
@@ -355,6 +352,6 @@ def primary_change():
 
 
 if __name__ == "__main__":
-    view_change_thread = Thread(target=primary_change_protocol)
-    view_change_thread.start()
+    # view_change_thread = Thread(target=primary_change_protocol)
+    # view_change_thread.start()
     app.run(host='0.0.0.0', port=80)
