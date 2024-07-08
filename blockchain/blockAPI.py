@@ -18,7 +18,7 @@ cert = Cert()
 node_len = 0
 node_id = local_ip  # 어떻게 처리할지 재고려
 port = ""
-primary = "192.168.0.31"  # primary 정하는 알고리즘 추가 필요
+primary = "192.168.0.28"  # primary 정하는 알고리즘 추가 필요
 primary_N = 0
 state = 'IDLE'
 view = 0
@@ -34,15 +34,14 @@ start_time = time.time()
 consensus_nums = 0
 TIMEOUT = 10
 
-# 본인 IP를 노드에 추가
-blockchain.add_node(node_id)
+# blockchain.add_node(node_id)  # 본인 IP를 노드에 추가
+
 
 # ==========================================================================================
 # Date: 2024.07.03
 # Writer: Kim Dong Gyu
 # Version: 1.0.0
 # ==========================================================================================
-
 
 def find_next_primary():
     nodes = list(blockchain.nodes)
@@ -308,7 +307,7 @@ def register_nodes():
     if cert.verify_cert(cert_pem):
         node = request.remote_addr
         blockchain.add_node(node)
-    node_len = len(blockchain.nodes) - 1
+    node_len = len(blockchain.nodes)
 
     nodes = sorted(blockchain.nodes)
     primary = nodes[primary_N]
