@@ -18,7 +18,8 @@ cert = Cert()
 node_len = 0
 node_id = local_ip  # 어떻게 처리할지 재고려
 port = ""
-primary = "192.168.0.31"  # primary 정하는 알고리즘 추가 필요
+primary = ""  # primary 정하는 알고리즘 추가 필요
+primary_N
 state = 'IDLE'
 view = 0
 log = []
@@ -33,12 +34,14 @@ start_time = time.time()
 consensus_nums = 0
 TIMEOUT = 10
 
+blockchain.add_node(node_id)  # 본인 IP를 노드에 추가
 
 # ==========================================================================================
 # Date: 2024.07.03
 # Writer: Kim Dong Gyu
 # Version: 1.0.0
 # ==========================================================================================
+
 
 def changing_primary():
     global primary_N, primary
@@ -169,6 +172,8 @@ def handle_request():
             }
             threads = []
             for node in blockchain.nodes:
+                if node == node_id:
+                    continue
                 preprepare_thread = Thread(target=send, args=(node, {
                     'type': 'PREPREPARE',
                     'view': view,   # 메세지가 전송되는 view
@@ -198,6 +203,8 @@ def handle_preprepare():  # Primary 노드는 해당 함수 실행 안함
             # for문을 비동기로 처리
             threads = []
             for node in blockchain.nodes:
+                if node == node_id:
+                    continue
                 prepare_thread = Thread(target=send, args=(node, {
                     'type': 'PREPARE',
                     'view': view+1,
@@ -236,6 +243,8 @@ def handle_prepare():
             # for문을 비동기로 처리
             threads = []
             for node in blockchain.nodes:
+                if node == node_id:
+                    continue
                 commit_thread = Thread(target=send, args=(node, {
                     'type': 'COMMIT',
                     'view': view+2,
@@ -293,7 +302,7 @@ def reply_request():
 
 @app.route('/nodes/register', methods=['POST'])
 def register_nodes():
-    global node_len
+    global node_len, primary, primary_N
     cert_pem = request.json.get('cert')
     if not cert_pem:
         return jsonify({'error': 'No certificate data provided'}), 400
@@ -302,6 +311,13 @@ def register_nodes():
         node = request.remote_addr
         blockchain.add_node(node)
     node_len = len(blockchain.nodes)
+
+    nodes = sorted(blockchain.nodes)
+    primary = nodes[primary_N]
+    print("Nodes: ", end='')  # debugging
+    print(blockchain.nodes)  # debugging
+    print("Primary node: ", end='')  # debugging
+    print(primary)  # debugging
     return jsonify({'message': 'Certificate received successfully'}), 200
 
 
