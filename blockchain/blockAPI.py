@@ -18,8 +18,7 @@ cert = Cert()
 node_len = 0
 node_id = local_ip  # 어떻게 처리할지 재고려
 port = ""
-primary = "192.168.0.28"  # primary 정하는 알고리즘 추가 필요
-primary_N = 0
+primary = "192.168.0.31"  # primary 정하는 알고리즘 추가 필요
 state = 'IDLE'
 view = 0
 log = []
@@ -33,8 +32,6 @@ consensus_failed = False
 start_time = time.time()
 consensus_nums = 0
 TIMEOUT = 10
-
-# blockchain.add_node(node_id)  # 본인 IP를 노드에 추가
 
 
 # ==========================================================================================
@@ -299,7 +296,7 @@ def reply_request():
 
 @app.route('/nodes/register', methods=['POST'])
 def register_nodes():
-    global node_len, primary, primary_N
+    global node_len
     cert_pem = request.json.get('cert')
     if not cert_pem:
         return jsonify({'error': 'No certificate data provided'}), 400
@@ -308,13 +305,6 @@ def register_nodes():
         node = request.remote_addr
         blockchain.add_node(node)
     node_len = len(blockchain.nodes)
-
-    # nodes = sorted(blockchain.nodes)
-    # primary = nodes[primary_N]
-    # print("Nodes: ", end='')  # debugging
-    # print(blockchain.nodes)  # debugging
-    # print("Primary node: ", end='')  # debugging
-    # print(primary)  # debugging
     return jsonify({'message': 'Certificate received successfully'}), 200
 
 
