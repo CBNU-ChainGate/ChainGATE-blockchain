@@ -307,7 +307,10 @@ def register_nodes():
         node = request.remote_addr
         blockchain.add_node(node)
     node_len = len(blockchain.nodes)
-    primary = list(blockchain.nodes)[primary_N]
+
+    blockchain.nodes = list(blockchain.nodes).sort()
+    primary = blockchain.nodes[primary_N]
+    blockchain.nodes = set(blockchain.nodes)
     print("Nodes: ", end='')  # debugging
     print(blockchain.nodes)  # debugging
     return jsonify({'message': 'Certificate received successfully'}), 200
