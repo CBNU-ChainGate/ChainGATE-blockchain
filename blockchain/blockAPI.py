@@ -134,9 +134,11 @@ def validate_preprepare(preprepare_message):
     }
     # client가 보낸 data에 이상이 있다면
     if D_m != preprepare_message['digest']:
+        print("validate_preprepare 1단계 실패")
         return False
     # 메세지의 view나 seq의 값에 이상이 있다면
     if preprepare_message['view'] != view or preprepare_message['seq'] != blockchain.len+1:
+        print("validate_preprepare 2단계 실패")
         return False
     return True
 
