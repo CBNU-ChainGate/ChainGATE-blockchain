@@ -331,13 +331,11 @@ def search_chain():
     return jsonify({'results': results}), 200
 
 
-# @app.route('/chain/get', methods=['GET'])
-# def full_chain():
-#     response = {
-#         'chain': blockchain.chain,
-#         'length': len(blockchain.chain),
-#     }
-#     return jsonify(response), 200
+@app.route('/chain/get', methods=['GET'])
+def full_chain():
+    print("Data Total: ", end='')
+    print(blockchain.get_block_total())
+    return jsonify("..."), 200
 
 
 @app.route('/transaction/new', methods=['POST'])
