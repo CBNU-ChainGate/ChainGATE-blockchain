@@ -40,41 +40,38 @@ TIMEOUT = 10
 # Version: 1.0.0
 # ==========================================================================================
 
-def find_next_primary():
-    nodes = list(blockchain.nodes)
-    nodes.sort()
-    index = nodes.index(primary)
-    if index == len(nodes) - 1:
-        return nodes[0]
-    else:
-        return nodes[index + 1]
+def changing_primary():
+    global primary_N, primary
+    primary_N = (primary_N+1) % len(blockchain.nodes)
+    primary = sorted(blockchain.nodes)[primary_N]
+    print(f'Primary Node is "{primary}"')
 
 
 def primary_change_protocol():
-    global view, primary, consensus_failed, start_time, request_data, consensus_nums
+    global view, primary, start_time, request_data, consensus_nums
 
-    while consensus_failed or (time.time() - start_time) > TIMEOUT:
-        consensus_failed = False  # 합의 실패 플래그 초기화
-        # 새로운 primary 노드 선택
-        primary = find_next_primary()
-        # 새로운 뷰 번호와 primary 노드 정보를 모든 노드에게 알림
-        message = {
-            'type': 'VIEW_CHANGE',
-            'new_primary': primary
-        }
-        for node in blockchain.nodes:
-            response = requests.post(
-                f"http://{node}/primary/change", json=message)
-            print(response)
+    # 새로운 primary 노드 선택
+    changing_primary()
 
-        if consensus_nums > 4:
-            consensus_nums = 0
-            print("Error: The maximum number of requests has been exceeded!")
-        else:
-            # 새로운 primary 노드를 기준으로 합의 과정 재시작
-            consensus_nums += 1
-            send(primary, {'type': 'REQUEST', 'data': request_data})
-    time.sleep(1)
+    # 새로운 뷰 번호와 primary 노드 정보를 모든 노드에게 알림
+    message = {
+        'type': 'VIEW_CHANGE',
+        'new_primary': primary
+    }
+    for node in blockchain.nodes:
+        if node == node_id:
+            continue
+        response = requests.post(
+            f"http://{node}/primary/change", json=message)
+        print(response)
+
+    if consensus_nums > 4:
+        consensus_nums = 0
+        print("Error: The maximum number of requests has been exceeded!")
+    else:
+        # 새로운 primary 노드를 기준으로 합의 과정 재시작
+        consensus_nums += 1
+        send(primary, {'type': 'REQUEST', 'data': request_data})
 
 
 def send(receiver, message):
@@ -355,6 +352,4 @@ def primary_change():
 
 
 if __name__ == "__main__":
-    view_change_thread = Thread(target=primary_change_protocol)
-    view_change_thread.start()
     app.run(host='0.0.0.0', port=80)
