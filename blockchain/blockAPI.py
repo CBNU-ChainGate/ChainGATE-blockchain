@@ -45,7 +45,7 @@ blockchain.add_node(node_id)  # 본인 IP를 노드에 추가
 def changing_primary():
     global primary_N, primary
     primary_N = (primary_N+1) % len(blockchain.nodes)
-    primary = list(blockchain.nodes)[primary_N]
+    primary = sorted(blockchain.nodes)[primary_N]
     print(f'Primary Node is "{primary}"')
 
 
@@ -308,13 +308,12 @@ def register_nodes():
         blockchain.add_node(node)
     node_len = len(blockchain.nodes)
 
-    blockchain.nodes = sorted(blockchain.nodes)
-    print("Nodes(list): ", end='')  # debugging
-    print(blockchain.nodes)  # debugging
-    primary = blockchain.nodes[primary_N]
-    blockchain.nodes = set(blockchain.nodes)
+    nodes = sorted(blockchain.nodes)
+    primary = nodes[primary_N]
     print("Nodes: ", end='')  # debugging
     print(blockchain.nodes)  # debugging
+    print("Primary node: ", end='')  # debugging
+    print(primary)  # debugging
     return jsonify({'message': 'Certificate received successfully'}), 200
 
 
