@@ -19,7 +19,7 @@ node_len = 0
 node_id = local_ip  # 어떻게 처리할지 재고려
 port = ""
 primary = ""  # primary 정하는 알고리즘 추가 필요
-primary_N
+primary_N = 0
 state = 'IDLE'
 view = 0
 log = []
