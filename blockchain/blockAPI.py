@@ -12,9 +12,10 @@ local_ip = socket.gethostbyname(socket.gethostname())
 blockchain = Blockchain()
 cert = Cert()
 node_len = 0
-node_id = local_ip  # 어떻게 처리할지 재고려
+node_id = local_ip
 port = ""
-primary = "192.168.0.31"  # primary 정하는 알고리즘 추가 필요
+primary = ""
+primary_N = 0
 state = 'IDLE'
 view = 0
 log = []
@@ -27,8 +28,10 @@ commit_certificate = False
 consensus_failed = False
 start_time = time.time()
 consensus_nums = 0
-TIMEOUT = 10
+# TIMEOUT = 10
+TIMEOUT = 1  # primary change protocol Test
 
+blockchain.add_node(node_id)
 
 # ==========================================================================================
 # Date: 2024.07.03
@@ -36,14 +39,12 @@ TIMEOUT = 10
 # Version: 1.0.0
 # ==========================================================================================
 
-def find_next_primary():
-    nodes = list(blockchain.nodes)
-    nodes.sort()
-    index = nodes.index(primary)
-    if index == len(nodes) - 1:
-        return nodes[0]
-    else:
-        return nodes[index + 1]
+
+def changing_primary():
+    global primary_N, primary
+    primary_N = (primary_N+1) % len(blockchain.nodes)
+    primary = list(blockchain.nodes)[changing_primary()]
+    print(f'Primary Node is "{primary}"')
 
 
 def primary_change_protocol():
@@ -51,14 +52,18 @@ def primary_change_protocol():
 
     while consensus_failed or (time.time() - start_time) > TIMEOUT:
         consensus_failed = False  # 합의 실패 플래그 초기화
+
         # 새로운 primary 노드 선택
-        primary = find_next_primary()
+        changing_primary()
+
         # 새로운 뷰 번호와 primary 노드 정보를 모든 노드에게 알림
         message = {
             'type': 'VIEW_CHANGE',
             'new_primary': primary
         }
         for node in blockchain.nodes:
+            if node == node_id:
+                continue
             response = requests.post(
                 f"http://{node}/primary/change", json=message)
 
@@ -161,6 +166,8 @@ def handle_request():
             }
             threads = []
             for node in blockchain.nodes:
+                if node == node_id:
+                    continue
                 preprepare_thread = Thread(target=send, args=(node, {
                     'type': 'PREPREPARE',
                     'view': view,   # 메세지가 전송되는 view
@@ -190,6 +197,8 @@ def handle_preprepare():  # Primary 노드는 해당 함수 실행 안함
             # for문을 비동기로 처리
             threads = []
             for node in blockchain.nodes:
+                if node == node_id:
+                    continue
                 prepare_thread = Thread(target=send, args=(node, {
                     'type': 'PREPARE',
                     'view': view+1,
@@ -228,6 +237,8 @@ def handle_prepare():
             # for문을 비동기로 처리
             threads = []
             for node in blockchain.nodes:
+                if node == node_id:
+                    continue
                 commit_thread = Thread(target=send, args=(node, {
                     'type': 'COMMIT',
                     'view': view+2,
@@ -285,7 +296,7 @@ def reply_request():
 
 @app.route('/nodes/register', methods=['POST'])
 def register_nodes():
-    global node_len
+    global node_len, primary, primary_N
     cert_pem = request.json.get('cert')
     if not cert_pem:
         return jsonify({'error': 'No certificate data provided'}), 400
@@ -294,6 +305,7 @@ def register_nodes():
         node = request.remote_addr
         blockchain.add_node(node)
     node_len = len(blockchain.nodes)
+    primary = list(blockchain.nodes)[primary_N]
     return jsonify({'message': 'Certificate received successfully'}), 200
 
 
@@ -337,7 +349,9 @@ def primary_change():
     global primary, log
     message = request.get_json()
     if message['type'] == 'VIEW_CHANGE':
-        primary = message['new_primary']
+        changing_primary()
+        if primary != message['new_primary']:  # debugging
+            return jsonify({'message': 'Error: View Change - Pirmary node was different!'}), 400
         log = []
         return jsonify({'message': 'View changed successfully'}), 200
     return jsonify({'message': 'Wrong Message!'}), 400
