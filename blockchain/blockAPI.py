@@ -18,7 +18,9 @@ cert = Cert()
 node_len = 0
 node_id = local_ip  # 어떻게 처리할지 재고려
 port = ""
-primary = "192.168.0.28"  # primary 정하는 알고리즘 추가 필요
+# primary = "192.168.0.28"  # primary 정하는 알고리즘 추가 필요
+primary = ""  # primary 정하는 알고리즘 추가 필요
+primary_N = 0
 state = 'IDLE'
 view = 0
 log = []
@@ -33,12 +35,14 @@ start_time = time.time()
 consensus_nums = 0
 TIMEOUT = 10
 
+blockchain.add_node(node_id)  # 본인 IP를 노드에 추가
 
 # ==========================================================================================
 # Date: 2024.07.03
 # Writer: Kim Dong Gyu
 # Version: 1.0.0
 # ==========================================================================================
+
 
 def find_next_primary():
     nodes = list(blockchain.nodes)
@@ -63,6 +67,8 @@ def primary_change_protocol():
             'new_primary': primary
         }
         for node in blockchain.nodes:
+            if node == node_id:
+                continue
             response = requests.post(
                 f"http://{node}/primary/change", json=message)
             print(response)
@@ -173,6 +179,8 @@ def handle_request():
             }
             threads = []
             for node in blockchain.nodes:
+                if node == node_id:
+                    continue
                 preprepare_thread = Thread(target=send, args=(node, {
                     'type': 'PREPREPARE',
                     'view': view,   # 메세지가 전송되는 view
@@ -202,6 +210,8 @@ def handle_preprepare():  # Primary 노드는 해당 함수 실행 안함
             # for문을 비동기로 처리
             threads = []
             for node in blockchain.nodes:
+                if node == node_id:
+                    continue
                 prepare_thread = Thread(target=send, args=(node, {
                     'type': 'PREPARE',
                     'view': view+1,
@@ -240,6 +250,8 @@ def handle_prepare():
             # for문을 비동기로 처리
             threads = []
             for node in blockchain.nodes:
+                if node == node_id:
+                    continue
                 commit_thread = Thread(target=send, args=(node, {
                     'type': 'COMMIT',
                     'view': view+2,
@@ -305,7 +317,15 @@ def register_nodes():
     if cert.verify_cert(cert_pem):
         node = request.remote_addr
         blockchain.add_node(node)
-    node_len = len(blockchain.nodes)
+    # node_len = len(blockchain.nodes)
+    node_len = len(blockchain.nodes) - 1
+
+    nodes = sorted(blockchain.nodes)
+    primary = nodes[primary_N]
+    print("Nodes: ", end='')  # debugging
+    print(blockchain.nodes)  # debugging
+    print("Primary node: ", end='')  # debugging
+    print(primary)  # debugging
     return jsonify({'message': 'Certificate received successfully'}), 200
 
 
