@@ -12,12 +12,12 @@ app = Flask(__name__)
 sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 sock.connect(("google.com", 443))
 local_ip = sock.getsockname()[0]
+node_id = local_ip
+port = "80"
 
 blockchain = Blockchain()
 cert = Cert()
 node_len = 0
-node_id = local_ip
-port = ""
 primary = ""
 primary_N = 0
 state = 'IDLE'
@@ -52,7 +52,7 @@ def changing_primary():
 
 def primary_change_protocol():
     print("==========Primary change Protocol==========")  # debugging
-    global view, primary, start_time, request_data, consensus_nums
+    global port, view, primary, start_time, request_data, consensus_nums
 
     # 새로운 뷰 번호와 primary 노드 정보를 모든 노드에게 알림
     message = {
@@ -63,7 +63,7 @@ def primary_change_protocol():
         if node == node_id:
             continue
         response = requests.post(
-            f"http://{node}/primary/change", json=message)
+            f"http://{node}:{port}/primary/change", json=message)
         print(response.json())
 
     # 새로운 primary 노드 선택
@@ -79,26 +79,27 @@ def primary_change_protocol():
 
 
 def send(receiver, message):
+    global port
     """API를 통해 각 노드에 요청을 보냄"""
     if message['type'] == 'REQUEST':
         print(f"~~REQUEST To {receiver}~~")
         response = requests.post(
-            f"http://{receiver}/consensus/request", json=message)
+            f"http://{receiver}:{port}/consensus/request", json=message)
 
     elif message['type'] == 'PREPREPARE':
         print(f"~~PRE-PREPARE To {receiver}~~")
         response = requests.post(
-            f"http://{receiver}/consensus/preprepare", json=message)
+            f"http://{receiver}:{port}/consensus/preprepare", json=message)
 
     elif message['type'] == 'PREPARE':
         print(f"~~PREPARE To {receiver}~~")
         response = requests.post(
-            f"http://{receiver}/consensus/prepare", json=message)
+            f"http://{receiver}:{port}/consensus/prepare", json=message)
 
     elif message['type'] == 'COMMIT':
         print(f"~~COMMIT To {receiver}~~")
         response = requests.post(
-            f"http://{receiver}/consensus/commit", json=message)
+            f"http://{receiver}:{port}/consensus/commit", json=message)
     print(response.json())  # debugging
 
 
@@ -346,7 +347,7 @@ def full_chain():
 @app.route('/transaction/new', methods=['POST'])
 def new_transaction():
     """register nodes"""
-    global request_data, state, primary, node_id, port
+    global request_data, state, primary, node_id
     data = request.get_json()
     state = 'REQUEST'
     request_data = data  # 원본 클라이언트 요청 메시지 저장
@@ -355,7 +356,7 @@ def new_transaction():
         'data': data
     }
     print(client_request)  # Debugging
-    send(node_id+port, client_request)
+    send(node_id, client_request)
     return jsonify({'message': 'Send Request to node...'}), 201
 
 
