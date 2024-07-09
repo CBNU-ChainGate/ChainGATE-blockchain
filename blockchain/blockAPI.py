@@ -104,7 +104,7 @@ def primary_change_protocol():
             continue
         response = requests.post(
             f"http://{node}/primary/change", json=message)
-        print(response)
+        print(response.json())
 
         # 여기서 잠시 멈추기
         # 여기서 잠시 멈추기
@@ -420,7 +420,7 @@ def handel_primary_change():
         primary = message['new_primary']
         log = []
         changing_primary()
-        time.sleep(5)
+        time.sleep(2)
         stop_pbft = False
         return jsonify({'message': 'View changed successfully'}), 200
     return jsonify({'message': 'Wrong Message!'}), 400
