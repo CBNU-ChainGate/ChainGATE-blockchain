@@ -166,10 +166,10 @@ def handle_request():
     try:
         message = request.get_json()
         blockchain.len = blockchain.get_block_total()
-        print("node_id: ", end='')
-        print(node_id)
-        print("primary: ", end='')
-        print(primary)
+        print("node_id: ", end='')  # Debugging
+        print(node_id)  # Debugging
+        print("primary: ", end='')  # Debugging
+        print(primary)  # Debugging
         if node_id == primary:
             start_time = time.time()  # 제한 시간 재설정
             print('Request > if YES!!')  # Debugging
@@ -313,7 +313,7 @@ def reply_request():
 
 @app.route('/nodes/register', methods=['POST'])
 def register_nodes():
-    global node_len
+    global node_len, primary
     cert_pem = request.json.get('cert')
     if not cert_pem:
         return jsonify({'error': 'No certificate data provided'}), 400
