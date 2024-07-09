@@ -22,11 +22,13 @@ class Blockchain:
 
     @staticmethod
     def hash(block):
+        """hashing the block"""
         block_string = json.dumps(block, sort_keys=True).encode()
         return hashlib.sha256(block_string).hexdigest()
 
     # 블록생성
     def create_block(self, previous_hash):
+        """Create the block"""
         if self.pending_transactions:
             block = {
                 'timestamp': time.time(),
@@ -42,21 +44,27 @@ class Blockchain:
                                            block['department'], block['name'], block['position'], block['time'])
 
             self.last_block = block
+            print('last block: ', end='')
+            print(self.last_block)
             return True
         return False
 
     # 트랜젝션 추가
     def add_transaction(self, data):
+        """Add the transaction"""
         self.pending_transactions = data
 
     # 노드 추가
     def add_node(self, node):
+        """Add the node in 'nodes variable'"""
         self.nodes.add(node)
 
     def get_block_total(self):
+        """Get total block count"""
         return db_manager.get_total_count()
 
     def search_block(self, date, name, department):
+        """Find blocks matching search data"""
         results = db_manager.search_data(date, name, department)
         if not results:
             return False
