@@ -86,10 +86,11 @@ def changing_primary():
     global primary_N, primary
     primary_N = (primary_N+1) % len(blockchain.nodes)
     primary = sorted(blockchain.nodes)[primary_N]
-    print(f'Primary Node is "{primary}"')
+    print(f'Changed Primary Node is "{primary}"')
 
 
 def primary_change_protocol():
+    print("Start primary change protocol!!!")  # debugging
     global view, primary, start_time, request_data, consensus_nums
     # 새로운 primary 노드 선택
     changing_primary()
@@ -224,7 +225,8 @@ def handle_request():
         else:
             return jsonify({'message': '~Not Primary node~'}), 400
     except Exception as e:
-        consensus_failed = True
+        # consensus_failed = True
+        primary_change_protocol()
         return jsonify({'message': str(e)}), 500
     return jsonify({'message': 'Pre-prepare message sended'}), 200
 
@@ -235,6 +237,7 @@ def handle_preprepare():  # Primary 노드는 해당 함수 실행 안함
     print("~~Pre-prepare~~")  # Debugging
     message = request.get_json()
     try:
+        raise Exception("This is a forced exception")  # debugging
         # pre-prepare 메세지에 대한 검증
         if validate_preprepare(message):  # 검증방법 재고려 필요 OOOOOOOOOOOOOOO
             print('preprepare > if YES!!')  # Debugging
@@ -258,7 +261,8 @@ def handle_preprepare():  # Primary 노드는 해당 함수 실행 안함
             consensus_done[1] += 1
             return jsonify({'message': 'Invalid PRE-PREPARE message!'}), 400
     except Exception as e:
-        consensus_failed = True
+        # consensus_failed = True
+        primary_change_protocol()
         return jsonify({'message': str(e)}), 500
     return jsonify({'message': 'Pre-prepare message validated'}), 200
 
@@ -298,7 +302,8 @@ def handle_prepare():
             consensus_done[2] += 1
             return jsonify({'message': 'Failed prepare step!'}), 400
     except Exception as e:
-        consensus_failed = True
+        # consensus_failed = True
+        primary_change_protocol()
         return jsonify({'message': str(e)}), 500
     return jsonify({'message': 'Successed prepare step'}), 200
 
@@ -325,7 +330,8 @@ def handle_commit():
                 consensus_done = [1, 0, 0]
                 return jsonify({'message': 'Successed commit step!'}), 200
     except Exception as e:
-        consensus_failed = True
+        # consensus_failed = True
+        primary_change_protocol()
         return jsonify({'message': str(e)}), 500
     return jsonify({'message': 'Failed commit step!'}), 400
 
