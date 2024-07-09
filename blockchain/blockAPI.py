@@ -166,6 +166,10 @@ def handle_request():
     try:
         message = request.get_json()
         blockchain.len = blockchain.get_block_total()
+        print("node_id: ", end='')
+        print(node_id)
+        print("primary: ", end='')
+        print(primary)
         if node_id == primary:
             start_time = time.time()  # 제한 시간 재설정
             print('Request > if YES!!')  # Debugging
