@@ -93,8 +93,6 @@ def changing_primary():
 def primary_change_protocol():
     print("Start primary change protocol!!!")  # debugging
     global view, primary, start_time, request_data, consensus_nums
-    # 새로운 primary 노드 선택
-    changing_primary()
 
     # 새로운 뷰 번호와 primary 노드 정보를 모든 노드에게 알림
     message = {
@@ -111,6 +109,9 @@ def primary_change_protocol():
         # 여기서 잠시 멈추기
         # 여기서 잠시 멈추기
         # 여기서 잠시 멈추기
+
+    # 새로운 primary 노드 선택
+    changing_primary()
 
     if consensus_nums > 3:  # 한 요청에 대해 허용되는 합의 횟수
         consensus_nums = 0
@@ -419,7 +420,7 @@ def handel_primary_change():
         primary = message['new_primary']
         log = []
         changing_primary()
-        time.sleep(2)
+        time.sleep(5)
         stop_pbft = False
         return jsonify({'message': 'View changed successfully'}), 200
     return jsonify({'message': 'Wrong Message!'}), 400
