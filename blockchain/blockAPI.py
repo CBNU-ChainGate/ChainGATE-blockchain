@@ -113,13 +113,13 @@ def primary_change_protocol():
     # 새로운 primary 노드 선택
     changing_primary()
 
-    if consensus_nums > 3:  # 한 요청에 대해 허용되는 합의 횟수
-        consensus_nums = 0
-        print("Error: The maximum number of requests has been exceeded!")
-    else:
-        # 새로운 primary 노드를 기준으로 합의 과정 재시작
-        consensus_nums += 1
-        send(primary, {'type': 'REQUEST', 'data': request_data})
+    # if consensus_nums > 3:  # 한 요청에 대해 허용되는 합의 횟수
+    #     consensus_nums = 0
+    #     print("Error: The maximum number of requests has been exceeded!")
+    # else:
+    #     # 새로운 primary 노드를 기준으로 합의 과정 재시작
+    #     consensus_nums += 1
+    #     send(primary, {'type': 'REQUEST', 'data': request_data})
 
 
 def send(receiver, message):
