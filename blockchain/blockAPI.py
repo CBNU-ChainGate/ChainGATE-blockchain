@@ -130,6 +130,7 @@ def validate_preprepare(preprepare_message):
 
     # validate_preprepare를 수행하려면 request_data가 필요
     # 따라서 request_data가 설정될 때까지 기다림
+    time.sleep(0.5)
     while not request_data:
         print("Waiting client_request ...")
 
