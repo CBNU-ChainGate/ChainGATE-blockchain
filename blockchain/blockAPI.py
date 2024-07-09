@@ -34,6 +34,7 @@ consensus_failed = False
 start_time = time.time()
 consensus_nums = 0
 TIMEOUT = 10
+stop_pbft = False  # PBFT 프로토콜 중단 플래그
 
 blockchain.add_node(node_id)  # 본인 IP를 노드에 추가
 
@@ -235,6 +236,8 @@ def handle_request():
 def handle_preprepare():  # Primary 노드는 해당 함수 실행 안함
     global consensus_failed, consensus_done
     print("~~Pre-prepare~~")  # Debugging
+    if stop_pbft:
+        return jsonify({'message': 'PBFT protocol stopped due to primary change'}), 500
     message = request.get_json()
     try:
         raise Exception("This is a forced exception")  # debugging
@@ -270,6 +273,8 @@ def handle_preprepare():  # Primary 노드는 해당 함수 실행 안함
 @app.route('/consensus/prepare', methods=['POST'])
 def handle_prepare():
     global prepare_certificate, log, consensus_failed, consensus_done
+    if stop_pbft:
+        return jsonify({'message': 'PBFT protocol stopped due to primary change'}), 500
     message = request.get_json()
     while consensus_done[1] != 1 and node_id != primary:
         pass
@@ -311,6 +316,8 @@ def handle_prepare():
 @app.route('/consensus/commit', methods=['POST'])
 def handle_commit():
     global request_data, log, commit_certificate, consensus_failed, consensus_done
+    if stop_pbft:
+        return jsonify({'message': 'PBFT protocol stopped due to primary change'}), 500
     while consensus_done[2] < node_len-1:
         pass
     try:
@@ -400,12 +407,15 @@ def new_transaction():
 
 
 @app.route('/primary/change', methods=['POST'])
-def primary_change():
-    global primary, log
+def handel_primary_change():
+    global primary, log, stop_pbft
     message = request.get_json()
     if message['type'] == 'VIEW_CHANGE':
+        stop_pbft = True
         primary = message['new_primary']
         log = []
+        changing_primary()
+        stop_pbft = False  # PBFT 프로토콜 중단 플래그 리셋
         return jsonify({'message': 'View changed successfully'}), 200
     return jsonify({'message': 'Wrong Message!'}), 400
 
