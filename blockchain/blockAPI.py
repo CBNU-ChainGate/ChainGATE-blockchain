@@ -8,13 +8,17 @@ from cert import Cert
 
 app = Flask(__name__)
 
-local_ip = socket.gethostbyname(socket.gethostname())
+# 로컬 IP 가져오기
+sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+sock.connect(("google.com", 443))
+local_ip = sock.getsockname()[0]
+
 blockchain = Blockchain()
 cert = Cert()
 node_len = 0
 node_id = local_ip  # 어떻게 처리할지 재고려
 port = ""
-primary = "192.168.0.31"  # primary 정하는 알고리즘 추가 필요
+primary = "192.168.0.28"  # primary 정하는 알고리즘 추가 필요
 state = 'IDLE'
 view = 0
 log = []
@@ -61,6 +65,7 @@ def primary_change_protocol():
         for node in blockchain.nodes:
             response = requests.post(
                 f"http://{node}/primary/change", json=message)
+            print(response)
 
         if consensus_nums > 4:
             consensus_nums = 0
@@ -125,6 +130,7 @@ def validate_preprepare(preprepare_message):
 
     # validate_preprepare를 수행하려면 request_data가 필요
     # 따라서 request_data가 설정될 때까지 기다림
+    time.sleep(0.5)
     while not request_data:
         print("Waiting client_request ...")
 
@@ -313,13 +319,10 @@ def search_chain():
     return jsonify({'results': results}), 200
 
 
-# @app.route('/chain/get', methods=['GET'])
-# def full_chain():
-#     response = {
-#         'chain': blockchain.chain,
-#         'length': len(blockchain.chain),
-#     }
-#     return jsonify(response), 200
+@app.route('/chain/get', methods=['GET'])
+def full_chain():
+    result = blockchain.get_block_total()
+    return jsonify(result), 200
 
 
 @app.route('/transaction/new', methods=['POST'])
@@ -350,6 +353,6 @@ def primary_change():
 
 
 if __name__ == "__main__":
-    view_change_thread = Thread(target=primary_change_protocol)
-    view_change_thread.start()
+    # view_change_thread = Thread(target=primary_change_protocol)
+    # view_change_thread.start()
     app.run(host='0.0.0.0', port=80)
