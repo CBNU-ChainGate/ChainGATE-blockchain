@@ -12,14 +12,13 @@ app = Flask(__name__)
 sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 sock.connect(("google.com", 443))
 local_ip = sock.getsockname()[0]
+node_id = local_ip
+port = "80"
 
 blockchain = Blockchain()
 cert = Cert()
 node_len = 0
-node_id = local_ip  # 어떻게 처리할지 재고려
-port = ""
-# primary = "192.168.0.28"  # primary 정하는 알고리즘 추가 필요
-primary = ""  # primary 정하는 알고리즘 추가 필요
+primary = ""
 primary_N = 0
 state = 'IDLE'
 view = 0
@@ -30,7 +29,6 @@ get_pre_msg = 0  # prepare 요청을 받은 수
 get_commit_msg = 0  # commit 요청을 받은 수
 prepare_certificate = False
 commit_certificate = False
-consensus_failed = False
 start_time = time.time()
 consensus_nums = 0
 TIMEOUT = 10
@@ -39,51 +37,17 @@ stop_pbft = False  # PBFT 프로토콜 중단 플래그
 blockchain.add_node(node_id)  # 본인 IP를 노드에 추가
 
 # ==========================================================================================
-# Date: 2024.07.03
+# This program is Blockchain API for [ChainGATE] project
+# This project is a graduation project from Chungbuk National University.
+#
+# Date: 2024.07.09
 # Writer: Kim Dong Gyu
 # Version: 1.0.0
 # ==========================================================================================
 
 
-# def find_next_primary():
-#     nodes = list(blockchain.nodes)
-#     nodes.sort()
-#     index = nodes.index(primary)
-#     if index == len(nodes) - 1:
-#         return nodes[0]
-#     else:
-#         return nodes[index + 1]
-
-
-# def primary_change_protocol():
-#     global view, primary, consensus_failed, start_time, request_data, consensus_nums
-
-#     while consensus_failed or (time.time() - start_time) > TIMEOUT:
-#         consensus_failed = False  # 합의 실패 플래그 초기화
-#         # 새로운 primary 노드 선택
-#         primary = find_next_primary()
-#         # 새로운 뷰 번호와 primary 노드 정보를 모든 노드에게 알림
-#         message = {
-#             'type': 'VIEW_CHANGE',
-#             'new_primary': primary
-#         }
-#         for node in blockchain.nodes:
-#             if node == node_id:
-#                 continue
-#             response = requests.post(
-#                 f"http://{node}/primary/change", json=message)
-#             print(response)
-
-#         if consensus_nums > 4:
-#             consensus_nums = 0
-#             print("Error: The maximum number of requests has been exceeded!")
-#         else:
-#             # 새로운 primary 노드를 기준으로 합의 과정 재시작
-#             consensus_nums += 1
-#             send(primary, {'type': 'REQUEST', 'data': request_data})
-#     time.sleep(1)
-
 def changing_primary():
+    """Change Primary node."""
     global primary_N, primary
     primary_N = (primary_N+1) % len(blockchain.nodes)
     primary = sorted(blockchain.nodes)[primary_N]
@@ -91,8 +55,9 @@ def changing_primary():
 
 
 def primary_change_protocol():
-    print("Start primary change protocol!!!")  # debugging
-    global view, primary, start_time, request_data, consensus_nums
+    """Change Primary node protocol."""
+    print("==========Primary change Protocol==========")  # debugging
+    global port, view, primary, start_time, request_data, consensus_nums
 
     # 새로운 뷰 번호와 primary 노드 정보를 모든 노드에게 알림
     message = {
@@ -103,12 +68,8 @@ def primary_change_protocol():
         if node == node_id:
             continue
         response = requests.post(
-            f"http://{node}/primary/change", json=message)
+            f"http://{node}:{port}/nodes/primary/change", json=message)
         print(response.json())
-
-        # 여기서 잠시 멈추기
-        # 여기서 잠시 멈추기
-        # 여기서 잠시 멈추기
 
     # 새로운 primary 노드 선택
     changing_primary()
@@ -123,61 +84,61 @@ def primary_change_protocol():
 
 
 def send(receiver, message):
-    """API를 통해 각 노드에 요청을 보냄"""
-    print("receiver: "+receiver)  # Debugging
+    global port
+    """API를 통해 각 노드에 요청을 보냄."""
     if message['type'] == 'REQUEST':
-        print("===============REQUEST===============")
+        print(f">>>REQUEST To {receiver}>>>")
         response = requests.post(
-            f"http://{receiver}/consensus/request", json=message)
+            f"http://{receiver}:{port}/consensus/request", json=message)
 
     elif message['type'] == 'PREPREPARE':
-        print("===============PRE-PREPARE===============")
+        print(f">>>PRE-PREPARE To {receiver}>>>")
         response = requests.post(
-            f"http://{receiver}/consensus/preprepare", json=message)
+            f"http://{receiver}:{port}/consensus/preprepare", json=message)
 
     elif message['type'] == 'PREPARE':
-        print("===============PREPARE===============")
+        print(f">>>PREPARE To {receiver}>>>")
         response = requests.post(
-            f"http://{receiver}/consensus/prepare", json=message)
+            f"http://{receiver}:{port}/consensus/prepare", json=message)
 
     elif message['type'] == 'COMMIT':
-        print("===============COMMIT===============")
+        print(f">>>COMMIT To {receiver}>>>")
         response = requests.post(
-            f"http://{receiver}/consensus/commit", json=message)
+            f"http://{receiver}:{port}/consensus/commit", json=message)
     print(response.json())  # debugging
 
 
 def wait_msg(caller):
-    """모든 노드의 응답을 받을 때까지 대기"""
+    """모든 노드의 응답을 받을 때까지 대기."""
     global get_pre_msg, get_commit_msg, node_id, primary
     if caller == 'prepare':
         get_pre_msg += 1     # 응답을 받은 노드 개수 저장
         if node_id == primary and get_pre_msg == node_len:
             get_pre_msg = 0
-            print("*****GET ALL MESSAGE*****")
+            print("*****Waiting msg Done*****")
             return False
         elif get_pre_msg == node_len-1:
             get_pre_msg = 0
-            print("*****GET ALL MESSAGE*****")
+            print("*****Waiting msg Done*****")
             return False
     elif caller == 'commit':
         get_commit_msg += 1     # 응답을 받은 노드 개수 저장
         if get_commit_msg == node_len:
             get_commit_msg = 0
-            print("*****GET ALL MESSAGE*****")
+            print("*****Waiting msg Done*****")
             return False
     return True
 
 
 def validate_preprepare(preprepare_message):
-    """pre-prepare 메세지가 정상적인 메세지인지 검증"""
+    """pre-prepare 메세지가 정상적인 메세지인지 검증."""
     global request_data
     time.sleep(0.5)  # /transaction/new 요청을 받는데까지의 delay를 기다리기 위함
 
     # validate_preprepare를 수행하려면 request_data가 필요
     # 따라서 request_data가 설정될 때까지 기다림
     while not request_data:
-        print("Waiting client_request ...")
+        print("Waiting client_request (/transaction/new) ...")
 
     D_m = {
         "date": request_data["date"],
@@ -190,27 +151,27 @@ def validate_preprepare(preprepare_message):
     # 메세지의 view나 seq의 값에 이상이 있다면
     if preprepare_message['view'] != view or preprepare_message['seq'] != blockchain.len+1:
         print("validate_preprepare 2단계 실패")
-        print(preprepare_message['view'])
-        print(view)
-        print(preprepare_message['seq'])
-        print(blockchain.len+1)
         return False
     return True
 
 
+########################################################################
+### PBFT Protocol (Request > Pre-Prepare > Prepare > Commit > Reply) ###
+########################################################################
+
 @app.route('/consensus/request', methods=['POST'])
 def handle_request():
-    global view, node_id, primary, start_time, consensus_failed
-    print("~~Request~~")  # Debugging
+    """Requst Step."""
+    global view, node_id, primary, start_time
+    print("==========Request==========")  # Debugging
     try:
         message = request.get_json()
         blockchain.len = blockchain.get_block_total()
         if node_id == primary:
+            print('Debugging: Pass the IF in Request')  # Debugging
             start_time = time.time()  # 제한 시간 재설정
-            print('Request > if YES!!')  # Debugging
             N = blockchain.len + 1
-            print("len: ", end='')  # debugging
-            print(blockchain.len)  # debugging
+
             # date와 time 값 추출(JSON 형태)
             D_m = {
                 "date": message['data']["date"],
@@ -229,25 +190,25 @@ def handle_request():
                 threads.append(preprepare_thread)
                 preprepare_thread.start()
         else:
-            return jsonify({'message': '~Not Primary node~'}), 400
+            return jsonify({'message': '(Request) This is not Primary node!'}), 400
     except Exception as e:
-        # consensus_failed = True
         primary_change_protocol()
-        return jsonify({'message': str(e)}), 500
-    return jsonify({'message': 'Pre-prepare message sended'}), 200
+        return jsonify({'error': str(e)}), 500
+    return jsonify({'message': '(Request) The Request step is complete.'}), 200
 
 
 @app.route('/consensus/preprepare', methods=['POST'])
 def handle_preprepare():  # Primary 노드는 해당 함수 실행 안함
-    global consensus_failed, consensus_done
-    print("~~Pre-prepare~~")  # Debugging
+    """Pre-Prepare Step."""
+    global consensus_done
+    print("==========Pre-prepare==========")  # Debugging
     if stop_pbft:
-        return jsonify({'message': 'PBFT protocol stopped due to primary change'}), 500
+        return jsonify({'error': 'PBFT protocol stopped due to primary change!'}), 500
     message = request.get_json()
     try:
         # pre-prepare 메세지에 대한 검증
-        if validate_preprepare(message):  # 검증방법 재고려 필요 OOOOOOOOOOOOOOO
-            print('preprepare > if YES!!')  # Debugging
+        if validate_preprepare(message):
+            print('Debugging: Pass the IF in preprepare!!')  # Debugging
             log.append(message)  # pre-prepare 메세지 수집
             # for문을 비동기로 처리
             threads = []
@@ -266,19 +227,19 @@ def handle_preprepare():  # Primary 노드는 해당 함수 실행 안함
             consensus_done[1] += 1
         else:
             consensus_done[1] += 1
-            return jsonify({'message': 'Invalid PRE-PREPARE message!'}), 400
+            return jsonify({'message': '(Pre-prepare) The PRE-PREPARE message is invalid!'}), 400
     except Exception as e:
-        # consensus_failed = True
         primary_change_protocol()
-        return jsonify({'message': str(e)}), 500
-    return jsonify({'message': 'Pre-prepare message validated'}), 200
+        return jsonify({'error': str(e)}), 500
+    return jsonify({'message': '(Pre-prepare) The Pre-prepare step is complete.'}), 200
 
 
 @app.route('/consensus/prepare', methods=['POST'])
 def handle_prepare():
-    global prepare_certificate, log, consensus_failed, consensus_done
+    """Prepare Step."""
+    global prepare_certificate, log, consensus_done
     if stop_pbft:
-        return jsonify({'message': 'PBFT protocol stopped due to primary change'}), 500
+        return jsonify({'error': 'PBFT protocol stopped due to primary change!'}), 500
     message = request.get_json()
     while consensus_done[1] != 1 and node_id != primary:
         pass
@@ -286,8 +247,8 @@ def handle_prepare():
         log.append(message)         # prepare 메세지 수집
         if wait_msg('prepare'):  # 모든 노드한테서 메세지를 받을 때까지 기다리기
             consensus_done[2] += 1
-            return jsonify({'message': 'Wait the message!'}), 404
-        print("~~PREPARE~~")  # Debugging
+            return jsonify({'message': '(Prepare) Wait the message!'}), 404
+        print("==========PREPARE==========")  # Debugging
         prepare_msg_list = [m for m in log if m['type'] == 'PREPARE' and m['view']
                             == message['view'] and m['seq'] == message['seq']]
         if len(prepare_msg_list) > 2/3 * (node_len-1):
@@ -309,45 +270,46 @@ def handle_prepare():
             consensus_done[2] += 1
         else:
             consensus_done[2] += 1
-            return jsonify({'message': 'Failed prepare step!'}), 400
+            return jsonify({'message': '(Prepare) The Prepare step is failed!'}), 400
     except Exception as e:
-        # consensus_failed = True
         primary_change_protocol()
-        return jsonify({'message': str(e)}), 500
-    return jsonify({'message': 'Successed prepare step'}), 200
+        return jsonify({'error': str(e)}), 500
+    return jsonify({'message': '(Prepare) The Prepare step is complete.'}), 200
 
 
 @app.route('/consensus/commit', methods=['POST'])
 def handle_commit():
-    global request_data, log, commit_certificate, consensus_failed, consensus_done
+    """Commit Step."""
+    global request_data, log, commit_certificate, consensus_done
     if stop_pbft:
-        return jsonify({'message': 'PBFT protocol stopped due to primary change'}), 500
+        return jsonify({'error': 'PBFT protocol stopped due to primary change!'}), 500
     while consensus_done[2] < node_len-1:
         pass
     try:
         message = request.get_json()
         log.append(message)         # commit 메세지 수집
         if wait_msg('commit'):  # 모든 노드한테서 메세지를 받을 때까지 기다리기
-            return jsonify({'message': 'Wait the message!'}), 404
-        print("~~COMMIT~~")  # Debugging
+            return jsonify({'message': '(Commit) Wait the message!'}), 404
+        print("==========COMMIT==========")  # Debugging
         commit_msg_list = [m for m in log if m['type'] == 'COMMIT' and m['view']
                            == message['view'] and m['seq'] == message['seq']]
         if len(commit_msg_list) > 2/3 * node_len:
             commit_certificate = True   # "commit certificate" 상태로 변환
+
         # Prepare Certificate & Commit Certificate 상태가 되었다면 블록 추가 시행
         if prepare_certificate and commit_certificate:
             if reply_request():
                 log = []
                 consensus_done = [1, 0, 0]
-                return jsonify({'message': 'Successed commit step!'}), 200
+                return jsonify({'message': '(Commit) The Commit step is complete.'}), 200
     except Exception as e:
-        # consensus_failed = True
         primary_change_protocol()
-        return jsonify({'message': str(e)}), 500
-    return jsonify({'message': 'Failed commit step!'}), 400
+        return jsonify({'error': str(e)}), 500
+    return jsonify({'message': '(Commit) The commit step is failed!'}), 400
 
 
 def reply_request():
+    """Reply to blockchain."""
     blockchain.add_transaction(request_data)
     last_block = blockchain.last_block
     if blockchain.create_block(blockchain.hash(last_block)):
@@ -355,18 +317,25 @@ def reply_request():
         return True
     return False
 
+########################################################################
+### PBFT Protocol (End)                                              ###
+########################################################################
+
 
 @app.route('/nodes/register', methods=['POST'])
 def register_nodes():
+    """Register nodes participating in consensus."""
     global node_len, primary
     cert_pem = request.json.get('cert')
     if not cert_pem:
-        return jsonify({'error': 'No certificate data provided'}), 400
+        return jsonify({'message': 'No certificate data provided!'}), 400
 
     if cert.verify_cert(cert_pem):
         node = request.remote_addr
         blockchain.add_node(node)
-    # node_len = len(blockchain.nodes)
+    else:
+        return jsonify({'message': 'Invalid or disallowed certificate!'}), 400
+
     node_len = len(blockchain.nodes) - 1
 
     nodes = sorted(blockchain.nodes)
@@ -375,43 +344,12 @@ def register_nodes():
     print(blockchain.nodes)  # debugging
     print("Primary node: ", end='')  # debugging
     print(primary)  # debugging
-    return jsonify({'message': 'Certificate received successfully'}), 200
+    return jsonify({'message': 'Certificate received successfully.'}), 200
 
 
-@app.route('/chain/search', methods=['POST'])
-def search_chain():
-    data = request.get_json()
-    results = blockchain.search_block(
-        data['date'], data['name'], data['department'])
-    if not results:
-        return jsonify({'error': 'No matching records found'}), 404
-    return jsonify({'results': results}), 200
-
-
-@app.route('/chain/get', methods=['GET'])
-def full_chain():
-    result = blockchain.get_block_total()
-    return jsonify(result), 200
-
-
-@app.route('/transaction/new', methods=['POST'])
-def new_transaction():
-    """register nodes"""
-    global request_data, state, primary, node_id, port
-    data = request.get_json()
-    state = 'REQUEST'
-    request_data = data  # 원본 클라이언트 요청 메시지 저장
-    client_request = {
-        'type': 'REQUEST',
-        'data': data
-    }
-    print(client_request)  # Debugging
-    send(node_id+port, client_request)
-    return jsonify({'message': 'Send Request to node...'}), 201
-
-
-@app.route('/primary/change', methods=['POST'])
+@app.route('/nodes/primary/change', methods=['POST'])
 def handel_primary_change():
+    """Change primary nodes."""
     global primary, log, stop_pbft
     message = request.get_json()
     if message['type'] == 'VIEW_CHANGE':
@@ -421,8 +359,42 @@ def handel_primary_change():
         changing_primary()
         time.sleep(2)
         stop_pbft = False
-        return jsonify({'message': 'View changed successfully'}), 200
+        return jsonify({'message': 'View changed successfully.'}), 200
     return jsonify({'message': 'Wrong Message!'}), 400
+
+
+@app.route('/chain/search', methods=['POST'])
+def search_chain():
+    """Search data from blockchain."""
+    data = request.get_json()
+    results = blockchain.search_block(
+        data['date'], data['name'], data['department'])
+    if not results:
+        return jsonify({'error': 'No matching records found!'}), 404
+    return jsonify({'results': results}), 200
+
+
+@app.route('/chain/get', methods=['GET'])
+def full_chain():
+    """Get data count from blockchain."""
+    result = blockchain.get_block_total()
+    return jsonify(result), 200
+
+
+@app.route('/transaction/new', methods=['POST'])
+def new_transaction():
+    """Issue transaction and execute consensus protocol for block creation."""
+    global request_data, state, primary, node_id
+    data = request.get_json()
+    state = 'REQUEST'
+    request_data = data  # 원본 클라이언트 요청 메시지 저장
+    client_request = {
+        'type': 'REQUEST',
+        'data': data
+    }
+    print(client_request)  # Debugging
+    send(node_id, client_request)
+    return jsonify({'message': 'Send Request to node...'}), 201
 
 
 if __name__ == "__main__":

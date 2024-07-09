@@ -12,7 +12,6 @@ db_manager.connect()
 
 class Blockchain:
     def __init__(self):
-        # self.chain = []
         self.last_block = {}
         self.pending_transactions = {}
         self.nodes = set()
@@ -23,11 +22,13 @@ class Blockchain:
 
     @staticmethod
     def hash(block):
+        """hashing the block"""
         block_string = json.dumps(block, sort_keys=True).encode()
         return hashlib.sha256(block_string).hexdigest()
 
     # 블록생성
     def create_block(self, previous_hash):
+        """Create the block"""
         if self.pending_transactions:
             block = {
                 'timestamp': time.time(),
@@ -48,16 +49,20 @@ class Blockchain:
 
     # 트랜젝션 추가
     def add_transaction(self, data):
+        """Add the transaction"""
         self.pending_transactions = data
 
     # 노드 추가
     def add_node(self, node):
+        """Add the node in 'nodes variable'"""
         self.nodes.add(node)
 
     def get_block_total(self):
+        """Get total block count"""
         return db_manager.get_total_count()
 
     def search_block(self, date, name, department):
+        """Find blocks matching search data"""
         results = db_manager.search_data(date, name, department)
         if not results:
             return False
@@ -65,25 +70,3 @@ class Blockchain:
             result['date'] = str(result['date'])
             result['time'] = str(result['time'])
         return results
-
-    # # 노드 간의 블록체인 동기화
-    # def synchronize_node(self):
-    #     neighbours = self.nodes
-    #     new_chain = None
-    #     max_length = len(self.chain)
-
-    #     for node in neighbours:
-    #         response = requests.get(f'http://{node}/chain/get')
-    #         if response.status_code == 200:
-    #             chain = response.json()['chain']
-    #             length = response.json()['length']
-
-    #             # 길이가 더 긴 노드의 데이터로 동기화
-    #             if length > max_length:
-    #                 max_length = length
-    #                 new_chain = chain
-
-    #     if new_chain:
-    #         self.chain = new_chain
-    #         return True
-    #     return False
