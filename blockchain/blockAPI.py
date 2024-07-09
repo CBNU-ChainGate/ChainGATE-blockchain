@@ -108,6 +108,10 @@ def primary_change_protocol():
             f"http://{node}/primary/change", json=message)
         print(response)
 
+        # 여기서 잠시 멈추기
+        # 여기서 잠시 멈추기
+        # 여기서 잠시 멈추기
+
     if consensus_nums > 3:  # 한 요청에 대해 허용되는 합의 횟수
         consensus_nums = 0
         print("Error: The maximum number of requests has been exceeded!")
@@ -415,7 +419,8 @@ def handel_primary_change():
         primary = message['new_primary']
         log = []
         changing_primary()
-        stop_pbft = False  # PBFT 프로토콜 중단 플래그 리셋
+        time.sleep(2)
+        stop_pbft = False
         return jsonify({'message': 'View changed successfully'}), 200
     return jsonify({'message': 'Wrong Message!'}), 400
 
