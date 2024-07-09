@@ -44,8 +44,6 @@ class Blockchain:
                                            block['department'], block['name'], block['position'], block['time'])
 
             self.last_block = block
-            print('last block: ', end='')
-            print(self.last_block)
             return True
         return False
 
