@@ -44,43 +44,75 @@ blockchain.add_node(node_id)  # 본인 IP를 노드에 추가
 # ==========================================================================================
 
 
-def find_next_primary():
-    nodes = list(blockchain.nodes)
-    nodes.sort()
-    index = nodes.index(primary)
-    if index == len(nodes) - 1:
-        return nodes[0]
-    else:
-        return nodes[index + 1]
+# def find_next_primary():
+#     nodes = list(blockchain.nodes)
+#     nodes.sort()
+#     index = nodes.index(primary)
+#     if index == len(nodes) - 1:
+#         return nodes[0]
+#     else:
+#         return nodes[index + 1]
+
+
+# def primary_change_protocol():
+#     global view, primary, consensus_failed, start_time, request_data, consensus_nums
+
+#     while consensus_failed or (time.time() - start_time) > TIMEOUT:
+#         consensus_failed = False  # 합의 실패 플래그 초기화
+#         # 새로운 primary 노드 선택
+#         primary = find_next_primary()
+#         # 새로운 뷰 번호와 primary 노드 정보를 모든 노드에게 알림
+#         message = {
+#             'type': 'VIEW_CHANGE',
+#             'new_primary': primary
+#         }
+#         for node in blockchain.nodes:
+#             if node == node_id:
+#                 continue
+#             response = requests.post(
+#                 f"http://{node}/primary/change", json=message)
+#             print(response)
+
+#         if consensus_nums > 4:
+#             consensus_nums = 0
+#             print("Error: The maximum number of requests has been exceeded!")
+#         else:
+#             # 새로운 primary 노드를 기준으로 합의 과정 재시작
+#             consensus_nums += 1
+#             send(primary, {'type': 'REQUEST', 'data': request_data})
+#     time.sleep(1)
+
+def changing_primary():
+    global primary_N, primary
+    primary_N = (primary_N+1) % len(blockchain.nodes)
+    primary = sorted(blockchain.nodes)[primary_N]
+    print(f'Primary Node is "{primary}"')
 
 
 def primary_change_protocol():
-    global view, primary, consensus_failed, start_time, request_data, consensus_nums
+    global view, primary, start_time, request_data, consensus_nums
+    # 새로운 primary 노드 선택
+    changing_primary()
 
-    while consensus_failed or (time.time() - start_time) > TIMEOUT:
-        consensus_failed = False  # 합의 실패 플래그 초기화
-        # 새로운 primary 노드 선택
-        primary = find_next_primary()
-        # 새로운 뷰 번호와 primary 노드 정보를 모든 노드에게 알림
-        message = {
-            'type': 'VIEW_CHANGE',
-            'new_primary': primary
-        }
-        for node in blockchain.nodes:
-            if node == node_id:
-                continue
-            response = requests.post(
-                f"http://{node}/primary/change", json=message)
-            print(response)
+    # 새로운 뷰 번호와 primary 노드 정보를 모든 노드에게 알림
+    message = {
+        'type': 'VIEW_CHANGE',
+        'new_primary': primary
+    }
+    for node in blockchain.nodes:
+        if node == node_id:
+            continue
+        response = requests.post(
+            f"http://{node}/primary/change", json=message)
+        print(response)
 
-        if consensus_nums > 4:
-            consensus_nums = 0
-            print("Error: The maximum number of requests has been exceeded!")
-        else:
-            # 새로운 primary 노드를 기준으로 합의 과정 재시작
-            consensus_nums += 1
-            send(primary, {'type': 'REQUEST', 'data': request_data})
-    time.sleep(1)
+    if consensus_nums > 3:  # 한 요청에 대해 허용되는 합의 횟수
+        consensus_nums = 0
+        print("Error: The maximum number of requests has been exceeded!")
+    else:
+        # 새로운 primary 노드를 기준으로 합의 과정 재시작
+        consensus_nums += 1
+        send(primary, {'type': 'REQUEST', 'data': request_data})
 
 
 def send(receiver, message):
@@ -133,10 +165,10 @@ def wait_msg(caller):
 def validate_preprepare(preprepare_message):
     """pre-prepare 메세지가 정상적인 메세지인지 검증"""
     global request_data
+    time.sleep(0.5)  # /transaction/new 요청을 받는데까지의 delay를 기다리기 위함
 
     # validate_preprepare를 수행하려면 request_data가 필요
     # 따라서 request_data가 설정될 때까지 기다림
-    time.sleep(0.5)
     while not request_data:
         print("Waiting client_request ...")
 
