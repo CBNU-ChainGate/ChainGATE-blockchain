@@ -245,7 +245,6 @@ def handle_preprepare():  # Primary 노드는 해당 함수 실행 안함
         return jsonify({'message': 'PBFT protocol stopped due to primary change'}), 500
     message = request.get_json()
     try:
-        raise Exception("This is a forced exception")  # debugging
         # pre-prepare 메세지에 대한 검증
         if validate_preprepare(message):  # 검증방법 재고려 필요 OOOOOOOOOOOOOOO
             print('preprepare > if YES!!')  # Debugging
@@ -284,6 +283,7 @@ def handle_prepare():
     while consensus_done[1] != 1 and node_id != primary:
         pass
     try:
+        raise Exception("This is a forced exception")  # debugging
         log.append(message)         # prepare 메세지 수집
         if wait_msg('prepare'):  # 모든 노드한테서 메세지를 받을 때까지 기다리기
             consensus_done[2] += 1
