@@ -166,10 +166,6 @@ def handle_request():
     try:
         message = request.get_json()
         blockchain.len = blockchain.get_block_total()
-        print("node_id: ", end='')  # Debugging
-        print(node_id)  # Debugging
-        print("primary: ", end='')  # Debugging
-        print(primary)  # Debugging
         if node_id == primary:
             start_time = time.time()  # 제한 시간 재설정
             print('Request > if YES!!')  # Debugging
@@ -377,6 +373,4 @@ def primary_change():
 
 
 if __name__ == "__main__":
-    # view_change_thread = Thread(target=primary_change_protocol)
-    # view_change_thread.start()
     app.run(host='0.0.0.0', port=80)
