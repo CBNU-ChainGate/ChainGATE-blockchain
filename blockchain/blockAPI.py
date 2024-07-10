@@ -377,10 +377,6 @@ def new_transaction():
         thread.start()
         print(f"Sent transaction request to {node}.")
 
-    # Wait for all threads to complete
-    for thread in threads:
-        thread.join()
-
     return jsonify({'message': 'Send Request to node.'}), 201
 
 
