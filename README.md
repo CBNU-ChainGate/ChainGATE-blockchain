@@ -53,7 +53,7 @@ mysql> CREATE TABLE entrance_log (
     id INT AUTO_INCREMENT PRIMARY KEY,
     previous_hash CHAR(64) NOT NULL,
     timestamp DOUBLE NOT NULL,
-    date CHAR(8) NOT NULL,
+    date DATE NOT NULL,
     department VARCHAR(100) NOT NULL,
     name VARCHAR(100) NOT NULL,
     position VARCHAR(100) NOT NULL,
