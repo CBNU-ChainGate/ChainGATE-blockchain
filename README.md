@@ -65,6 +65,7 @@ mysql> FLUSH PRIVILEGES;
 ### 3. Git Repository 및 필요 파일 생성
 
 ```
+$ sudo apt install git
 $ git clone https://github.com/DDongu/ChainGATE.git
 $ cd /ChainGATE/blockchain
 $ vi config.py      # 아래 config.py 파일을 각 노드 환경에 맞게 작성
