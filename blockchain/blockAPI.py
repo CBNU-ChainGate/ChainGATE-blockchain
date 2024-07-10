@@ -163,8 +163,6 @@ def handle_request():
                     }))
                     threads.append(preprepare_thread)
                     preprepare_thread.start()
-            for thread in threads:
-                thread.join()
         else:
             return jsonify({'message': '(Request) This is not Primary node!'}), 400
     except Exception as e:
@@ -197,8 +195,6 @@ def handle_preprepare():
                     }))
                     threads.append(prepare_thread)
                     prepare_thread.start()
-            for thread in threads:
-                thread.join()
             consensus_done[1] += 1
         else:
             consensus_done[1] += 1
@@ -239,8 +235,6 @@ def handle_prepare():
                     }))
                     threads.append(commit_thread)
                     commit_thread.start()
-            for thread in threads:
-                thread.join()
             consensus_done[2] += 1
         else:
             consensus_done[2] += 1
@@ -368,19 +362,19 @@ def new_transaction():
 
     # Broadcast the transaction request to all nodes including self
     for node in blockchain.nodes:
-        if node == node_id:
-            continue
+        # if node == node_id:
+        #     continue
         response = requests.post(
             f"http://{node}:{PORT}/consensus/request", json=data)
         print(
             f"Sent transaction request to {node}. Response: {response.json()}")
 
-    response = requests.post(
-        f"http://{node_id}:{PORT}/consensus/request", json=data)
-    print(f"Sent transaction request to {node}. Response: {response.json()}")
+    # response = requests.post(
+    #     f"http://{node_id}:{PORT}/consensus/request", json=data)
+    # print(f"Sent transaction request to {node}. Response: {response.json()}")
 
     # List to hold threads
-    threads = []
+    # threads = []
 
     # Broadcast the transaction request to all nodes including self
     # for node in blockchain.nodes:
