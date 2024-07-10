@@ -361,31 +361,25 @@ def new_transaction():
     # send(node_id, client_request)
 
     # Broadcast the transaction request to all nodes including self
-    for node in blockchain.nodes:
-        # if node == node_id:
-        #     continue
-        response = requests.post(
-            f"http://{node}:{PORT}/consensus/request", json=data)
-        print(
-            f"Sent transaction request to {node}. Response: {response.json()}")
-
-    # response = requests.post(
-    #     f"http://{node_id}:{PORT}/consensus/request", json=data)
-    # print(f"Sent transaction request to {node}. Response: {response.json()}")
+    # for node in blockchain.nodes:
+    #     response = requests.post(
+    #         f"http://{node}:{PORT}/consensus/request", json=data)
+    #     print(
+    #         f"Sent transaction request to {node}. Response: {response.json()}")
 
     # List to hold threads
-    # threads = []
+    threads = []
 
     # Broadcast the transaction request to all nodes including self
-    # for node in blockchain.nodes:
-    #     thread = Thread(target=send, args=(node, data))
-    #     threads.append(thread)
-    #     thread.start()
-    #     print(f"Sent transaction request to {node}.")
+    for node in blockchain.nodes:
+        thread = Thread(target=send, args=(node, data))
+        threads.append(thread)
+        thread.start()
+        print(f"Sent transaction request to {node}.")
 
-    # # Wait for all threads to complete
-    # for thread in threads:
-    #     thread.join()
+    # Wait for all threads to complete
+    for thread in threads:
+        thread.join()
 
     return jsonify({'message': 'Send Request to node.'}), 201
 
