@@ -5,6 +5,7 @@ import socket
 import time
 from blockchain import Blockchain
 from cert import Cert
+from config import PORT
 
 app = Flask(__name__)
 
@@ -13,7 +14,7 @@ sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 sock.connect(("google.com", 443))
 local_ip = sock.getsockname()[0]
 node_id = local_ip
-port = "80"
+# port = PORT
 
 blockchain = Blockchain()
 cert = Cert()
@@ -57,7 +58,7 @@ def changing_primary():
 def primary_change_protocol():
     """Change Primary node protocol."""
     print("==========Primary change Protocol==========")  # debugging
-    global port, view, primary, start_time, request_data, consensus_nums
+    global view, primary, start_time, request_data, consensus_nums
 
     # 새로운 뷰 번호와 primary 노드 정보를 모든 노드에게 알림
     message = {
@@ -68,7 +69,7 @@ def primary_change_protocol():
         if node == node_id:
             continue
         response = requests.post(
-            f"http://{node}:{port}/nodes/primary/change", json=message)
+            f"http://{node}:{PORT}/nodes/primary/change", json=message)
         print(response.json())
 
     # 새로운 primary 노드 선택
@@ -84,27 +85,26 @@ def primary_change_protocol():
 
 
 def send(receiver, message):
-    global port
     """API를 통해 각 노드에 요청을 보냄."""
     if message['type'] == 'REQUEST':
         print(f">>>REQUEST To {receiver}>>>")
         response = requests.post(
-            f"http://{receiver}:{port}/consensus/request", json=message)
+            f"http://{receiver}:{PORT}/consensus/request", json=message)
 
     elif message['type'] == 'PREPREPARE':
         print(f">>>PRE-PREPARE To {receiver}>>>")
         response = requests.post(
-            f"http://{receiver}:{port}/consensus/preprepare", json=message)
+            f"http://{receiver}:{PORT}/consensus/preprepare", json=message)
 
     elif message['type'] == 'PREPARE':
         print(f">>>PREPARE To {receiver}>>>")
         response = requests.post(
-            f"http://{receiver}:{port}/consensus/prepare", json=message)
+            f"http://{receiver}:{PORT}/consensus/prepare", json=message)
 
     elif message['type'] == 'COMMIT':
         print(f">>>COMMIT To {receiver}>>>")
         response = requests.post(
-            f"http://{receiver}:{port}/consensus/commit", json=message)
+            f"http://{receiver}:{PORT}/consensus/commit", json=message)
     print(response.json())  # debugging
 
 
@@ -398,4 +398,4 @@ def new_transaction():
 
 
 if __name__ == "__main__":
-    app.run(host='0.0.0.0', port=80)
+    app.run(host='0.0.0.0', port=PORT)
