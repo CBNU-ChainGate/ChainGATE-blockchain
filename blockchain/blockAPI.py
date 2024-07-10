@@ -23,7 +23,6 @@ cert = Cert()
 node_len = 0
 primary = ""
 primary_N = 0
-state = 'IDLE'
 view = 0
 log = []
 request_data = None
@@ -139,10 +138,12 @@ def validate_preprepare(preprepare_message):
 @app.route('/consensus/request', methods=['POST'])
 def handle_request():
     """Request Step."""
-    global view, node_id, primary, start_time
+    global request_data, view, node_id, primary, start_time
     print("==========Request==========")  # Debugging
+    request_data = None
     try:
         message = request.get_json()
+        request_data = message['data']  # Store original client request message
         blockchain.len = blockchain.get_block_total()
         if node_id == primary:
             print('Debugging: Pass the IF in Request')  # Debugging
@@ -358,11 +359,9 @@ def new_transaction():
 
     # Reset state
     reset_consensus_state()
-    request_data = None
 
     data = request.get_json()
-    state = 'REQUEST'
-    request_data = data  # Store original client request message
+    # request_data = data  # Store original client request message
     client_request = {'type': 'REQUEST', 'data': data}
     print(client_request)  # Debugging
     send(node_id, client_request)
