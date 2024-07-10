@@ -72,13 +72,13 @@ def primary_change_protocol():
     print("==========Primary change Protocol==========")  # Debugging
     notify_primary_change()
     changing_primary()
-    global consensus_nums
-    if consensus_nums > 3:  # Maximum allowed consensus attempts
-        consensus_nums = 0
-        print("Error: The maximum number of requests has been exceeded!")
-    else:
-        consensus_nums += 1
-        send(primary, {'type': 'REQUEST', 'data': request_data})
+    # global consensus_nums
+    # if consensus_nums > 3:  # Maximum allowed consensus attempts
+    #     consensus_nums = 0
+    #     print("Error: The maximum number of requests has been exceeded!")
+    # else:
+    #     consensus_nums += 1
+    #     send(primary, {'type': 'REQUEST', 'data': request_data})
 
 
 def send(receiver, message):
@@ -180,6 +180,7 @@ def handle_preprepare():
         return jsonify({'error': 'PBFT protocol stopped due to primary change!'}), 500
     message = request.get_json()
     try:
+        raise Exception("Intentional exception to trigger primary change")
         if validate_preprepare(message):
             print('Debugging: Pass the IF in preprepare!!')  # Debugging
             log.append(message)
