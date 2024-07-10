@@ -72,13 +72,13 @@ def primary_change_protocol():
     print("==========Primary change Protocol==========")  # Debugging
     notify_primary_change()
     changing_primary()
-    # global consensus_nums
-    # if consensus_nums > 3:  # Maximum allowed consensus attempts
-    #     consensus_nums = 0
-    #     print("Error: The maximum number of requests has been exceeded!")
-    # else:
-    #     consensus_nums += 1
-    #     send(primary, {'type': 'REQUEST', 'data': request_data})
+    global consensus_nums
+    if consensus_nums > 3:  # Maximum allowed consensus attempts
+        consensus_nums = 0
+        print("Error: The maximum number of requests has been exceeded!")
+    else:
+        consensus_nums += 1
+        send(primary, {'type': 'REQUEST', 'data': request_data})
 
 
 def send(receiver, message):
@@ -215,8 +215,6 @@ def handle_prepare():
     while consensus_done[1] != 1 and node_id != primary:
         pass
     try:
-        raise Exception("Intentional exception to trigger primary change")
-
         log.append(message)
         if wait_for_messages('prepare'):
             consensus_done[2] += 1
