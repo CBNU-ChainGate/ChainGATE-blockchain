@@ -25,8 +25,8 @@ $ sudo ufw status
 
 ### python 및 관련 모듈 설치
 $ sudo apt install python3 python3-pip -y
-$ pip3 install flask
-$ pip3 install pyopenssl
+$ sudo pip3 install flask
+$ sudo pip3 install pyopenssl
 
 ### openssl 설치 및 개인키, CSR 발급
 $ sudo apt install openssl -y              # openssl 설치
