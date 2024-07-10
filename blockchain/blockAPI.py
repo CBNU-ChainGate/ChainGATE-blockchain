@@ -116,7 +116,7 @@ def wait_for_messages(caller):
 def validate_preprepare(preprepare_message):
     """Validate pre-prepare message."""
     global request_data, view
-    # time.sleep(0.5)  # Wait for /transaction/new request
+    time.sleep(0.5)  # Wait for /transaction/new request
 
     while not request_data:
         print("Waiting client_request (/transaction/new) ...")
