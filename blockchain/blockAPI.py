@@ -35,6 +35,7 @@ start_time = time.time()
 consensus_nums = 0
 TIMEOUT = 10
 stop_pbft = False  # PBFT 프로토콜 중단 플래그
+pbft_protocol_condition = False
 
 blockchain.add_node(node_id)  # 본인 IP를 노드에 추가
 
@@ -296,8 +297,11 @@ def handle_commit():
 
 def reply_request():
     """Reply to blockchain."""
+    global pbft_protocol_condition
     blockchain.add_transaction(request_data)
     last_block = blockchain.last_block
+    pbft_protocol_condition = False  # PBFT 프로토콜이 끝났음을 알림
+
     if blockchain.create_block(blockchain.hash(last_block)):
         print(f"** Node [{node_id}] added a new block **")
         return True
@@ -370,7 +374,10 @@ def full_chain():
 @app.route('/transaction/new', methods=['POST'])
 def new_transaction():
     """Issue transaction and execute consensus protocol for block creation."""
-    global request_data, state, primary, node_id, consensus_nums, log, consensus_done
+    global pbft_protocol_condition, request_data, state, primary, node_id, consensus_nums, log, consensus_done
+
+    while pbft_protocol_condition:
+        print("Waiting trasaction/new!!!!")
 
     # 변수 초기화
     reset_consensus_state()
@@ -384,6 +391,7 @@ def new_transaction():
         'data': data
     }
     print(client_request)  # Debugging
+    pbft_protocol_condition = True  # PBFT 프로토콜이 수행 중임을 알림
     send(node_id, client_request)
     return jsonify({'message': 'Send Request to node...'}), 201
 
