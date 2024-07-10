@@ -136,6 +136,8 @@ $ cat ~/nohup.out
 
 ### 2. transaction/new [POST]
 
+**❗_모든 노드에 동시에 보내져야 됨_**
+
     {
         "date": "2024-04-12",
         "time": "10:30:00",
