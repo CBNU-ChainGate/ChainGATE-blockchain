@@ -49,7 +49,15 @@ blockchain.add_node(node_id)  # 본인 IP를 노드에 추가
 
 def changing_primary():
     """Change Primary node."""
-    global primary_N, primary
+    global primary_N, primary, consensus_nums, log, consensus_done, get_pre_msg, get_commit_msg
+
+    # 변수 초기화
+    consensus_nums = 0
+    log = []
+    consensus_done = [1, 0, 0]
+    get_pre_msg = 0
+    get_commit_msg = 0
+
     primary_N = (primary_N+1) % len(blockchain.nodes)
     primary = sorted(blockchain.nodes)[primary_N]
     print(f'Changed Primary Node is "{primary}"')
@@ -58,7 +66,7 @@ def changing_primary():
 def primary_change_protocol():
     """Change Primary node protocol."""
     print("==========Primary change Protocol==========")  # debugging
-    global view, primary, start_time, request_data, consensus_nums
+    global primary, request_data, consensus_nums
 
     # 새로운 뷰 번호와 primary 노드 정보를 모든 노드에게 알림
     message = {
@@ -132,7 +140,7 @@ def wait_msg(caller):
 
 def validate_preprepare(preprepare_message):
     """pre-prepare 메세지가 정상적인 메세지인지 검증."""
-    global request_data
+    global request_data, view
     time.sleep(0.5)  # /transaction/new 요청을 받는데까지의 delay를 기다리기 위함
 
     # validate_preprepare를 수행하려면 request_data가 필요
@@ -237,7 +245,7 @@ def handle_preprepare():  # Primary 노드는 해당 함수 실행 안함
 @app.route('/consensus/prepare', methods=['POST'])
 def handle_prepare():
     """Prepare Step."""
-    global prepare_certificate, log, consensus_done
+    global prepare_certificate, log, consensus_done, get_pre_msg
     if stop_pbft:
         return jsonify({'error': 'PBFT protocol stopped due to primary change!'}), 500
     message = request.get_json()
@@ -280,7 +288,7 @@ def handle_prepare():
 @app.route('/consensus/commit', methods=['POST'])
 def handle_commit():
     """Commit Step."""
-    global request_data, log, commit_certificate, consensus_done
+    global request_data, log, commit_certificate, consensus_done, prepare_certificate, commit_certificate
     if stop_pbft:
         return jsonify({'error': 'PBFT protocol stopped due to primary change!'}), 500
     while consensus_done[2] < node_len-1:
@@ -298,9 +306,9 @@ def handle_commit():
 
         # Prepare Certificate & Commit Certificate 상태가 되었다면 블록 추가 시행
         if prepare_certificate and commit_certificate:
+            prepare_certificate = False
+            commit_certificate = False
             if reply_request():
-                log = []
-                consensus_done = [1, 0, 0]
                 return jsonify({'message': '(Commit) The Commit step is complete.'}), 200
     except Exception as e:
         primary_change_protocol()
@@ -384,7 +392,14 @@ def full_chain():
 @app.route('/transaction/new', methods=['POST'])
 def new_transaction():
     """Issue transaction and execute consensus protocol for block creation."""
-    global request_data, state, primary, node_id
+    global request_data, state, primary, node_id, consensus_nums, log, consensus_done
+
+    # 변수 초기화
+    consensus_nums = 0
+    log = []
+    consensus_done = [1, 0, 0]
+    request_data = None
+
     data = request.get_json()
     state = 'REQUEST'
     request_data = data  # 원본 클라이언트 요청 메시지 저장
