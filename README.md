@@ -87,6 +87,7 @@ DB_LOCALHOST = 'localhost'
 DB_USER = 'db-username'
 DB_PASS = 'db-password'
 DB_DATABASE = 'chaingate'
+PORT=5000
 ```
 
 _register.py_
@@ -94,17 +95,17 @@ _register.py_
 ```
 ### at 192.168.0.29 노드 ###
 import requests
+from config import PORT, NODE_CERT_PATH
 
-"""Register yourself by requesting the /nodes/register API of another nodes."""
-nodes = ['192.168.0.28', '192.168.0.31'] # Another nodes
-node_cert_path = '/home/node1/certs/node_cert.pem'
-with open(node_cert_path, 'r') as f:
+"""Register yourself by requesting the /nodes/register
+nodes = ['192.168.0.29', '192.168.0.30']
+with open(NODE_CERT_PATH, 'r') as f:
     cert = f.read()
-data = {'cert': cert} # Send the certificate of the node to be registered as request data
+data = {'cert': cert}
 
 for node in nodes:
-    response = requests.post(f'http://{node}/nodes/register', json=data)
-    print(f'{node}: ', end='')
+    response = requests.post(f'http://{node}:{PORT}/nodes/register', json=data)
+    print(f'{node}:{PORT}  :', end='')
     print(response.json())
 ```
 
