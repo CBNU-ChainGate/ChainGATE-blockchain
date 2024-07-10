@@ -90,7 +90,6 @@ def primary_change_protocol():
         # 새로운 primary 노드를 기준으로 합의 과정 재시작
         consensus_nums += 1
         send(primary, {'type': 'REQUEST', 'data': request_data})
-        init_variable()
 
 
 def send(receiver, message):
@@ -289,7 +288,7 @@ def handle_prepare():
 @app.route('/consensus/commit', methods=['POST'])
 def handle_commit():
     """Commit Step."""
-    global request_data, log, commit_certificate, consensus_done
+    global request_data, log, commit_certificate, consensus_done, prepare_certificate, commit_certificate
     if stop_pbft:
         return jsonify({'error': 'PBFT protocol stopped due to primary change!'}), 500
     while consensus_done[2] < node_len-1:
@@ -307,9 +306,9 @@ def handle_commit():
 
         # Prepare Certificate & Commit Certificate 상태가 되었다면 블록 추가 시행
         if prepare_certificate and commit_certificate:
+            prepare_certificate = False
+            commit_certificate = False
             if reply_request():
-                prepare_certificate = False
-                commit_certificate = False
                 return jsonify({'message': '(Commit) The Commit step is complete.'}), 200
     except Exception as e:
         primary_change_protocol()
