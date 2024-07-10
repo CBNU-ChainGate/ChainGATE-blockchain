@@ -370,8 +370,7 @@ def new_transaction():
     # for node in blockchain.nodes:
     #     response = requests.post(
     #         f"http://{node}:{PORT}/consensus/request", json=data)
-    #     print(
-    #         f"Sent transaction request to {node}. Response: {response.json()}")
+    # print(f"Sent transaction request to {node}. Response: {response.json()}")
 
     # List to hold threads
     threads = []
@@ -381,12 +380,13 @@ def new_transaction():
         thread = Thread(target=send, args=(node, data))
         threads.append(thread)
         thread.start()
+        print(f"Sent transaction request to {node}.")
 
     # Wait for all threads to complete
     for thread in threads:
         thread.join()
 
-    return jsonify({'message': 'Send Request to node...'}), 201
+    return jsonify({'message': 'Send Request to node.'}), 201
 
 
 if __name__ == "__main__":
