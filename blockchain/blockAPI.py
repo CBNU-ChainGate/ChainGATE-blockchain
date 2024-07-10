@@ -116,7 +116,7 @@ def wait_for_messages(caller):
 def validate_preprepare(preprepare_message):
     """Validate pre-prepare message."""
     global request_data, view
-    time.sleep(0.5)  # Wait for /transaction/new request
+    # time.sleep(0.5)  # Wait for /transaction/new request
 
     while not request_data:
         print("Waiting client_request (/transaction/new) ...")
@@ -356,18 +356,6 @@ def new_transaction():
 
     data = request.get_json()
     data = {'type': 'REQUEST', 'data': data}
-    # request_data = data  # Store original client request message
-    # client_request = {'type': 'REQUEST', 'data': data}
-    # send(node_id, client_request)
-
-    # Broadcast the transaction request to all nodes including self
-    # for node in blockchain.nodes:
-    #     response = requests.post(
-    #         f"http://{node}:{PORT}/consensus/request", json=data)
-    #     print(
-    #         f"Sent transaction request to {node}. Response: {response.json()}")
-
-    # List to hold threads
     threads = []
 
     # Broadcast the transaction request to all nodes including self
