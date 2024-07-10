@@ -27,6 +27,8 @@ $ sudo ufw status
 $ sudo apt install python3 python3-pip -y
 $ sudo pip3 install flask
 $ sudo pip3 install pyopenssl
+$ sudo pip3 install mysql-connector-python
+
 
 ### openssl 설치 및 개인키, CSR 발급
 $ sudo apt install openssl -y              # openssl 설치
