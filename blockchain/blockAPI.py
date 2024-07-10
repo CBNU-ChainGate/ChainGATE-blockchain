@@ -361,10 +361,18 @@ def new_transaction():
     reset_consensus_state()
 
     data = request.get_json()
+    data = {'type': 'REQUEST', 'data': data}
     # request_data = data  # Store original client request message
-    client_request = {'type': 'REQUEST', 'data': data}
-    print(client_request)  # Debugging
-    send(node_id, client_request)
+    # client_request = {'type': 'REQUEST', 'data': data}
+    # send(node_id, client_request)
+
+    # Broadcast the transaction request to all nodes including self
+    for node in blockchain.nodes:
+        response = requests.post(
+            f"http://{node}:{PORT}/consensus/request", json=data)
+        print(
+            f"Sent transaction request to {node}. Response: {response.json()}")
+
     return jsonify({'message': 'Send Request to node...'}), 201
 
 
