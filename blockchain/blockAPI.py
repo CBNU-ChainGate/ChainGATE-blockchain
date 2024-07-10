@@ -180,7 +180,6 @@ def handle_preprepare():
         return jsonify({'error': 'PBFT protocol stopped due to primary change!'}), 500
     message = request.get_json()
     try:
-        raise Exception("Intentional exception to trigger primary change")
         if validate_preprepare(message):
             print('Debugging: Pass the IF in preprepare!!')  # Debugging
             log.append(message)
@@ -216,6 +215,8 @@ def handle_prepare():
     while consensus_done[1] != 1 and node_id != primary:
         pass
     try:
+        raise Exception("Intentional exception to trigger primary change")
+
         log.append(message)
         if wait_for_messages('prepare'):
             consensus_done[2] += 1
