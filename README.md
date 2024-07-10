@@ -2,19 +2,92 @@
 
 블록체인을 이용한 출입관리시스템\_충북대학교 졸업작품
 
-# 1. Blockchain API GUIDE
+# version
 
-### 1-1. nodes/register [POST]
+2024.07.09 - version 1.0.0
 
-    { "cert": cert }
+# Setting
 
-|  Key   |         Value         |   Type    |
-| :----: | :-------------------: | :-------: |
-| "cert" | CA를 통해 받은 인증서 | .pem 파일 |
+❗**최소 3개 이상의 우분투 서버가 필요함**
 
-.
+❗각 서버는 노드로 지칭하고, 모든 노드는 아래의 동일한 세팅이 필요함
 
-**❗각 노드에서 register.py를 별도로 실행**
+### 1. 필요 프로그램 설치 및 설정
+
+```
+$ sudo apt update
+
+### ufw 활성화 및 포트 설정
+$ sudo apt install ufw
+$ sudo ufw allow ssh, mysql, 5000       # 22, 3306, 5000 포트
+$ sudo ufw enable
+$ sudo ufw status
+
+### python 및 관련 모듈 설치
+$ sudo apt install python3 python3-pip
+$ pip3 install flask
+$ pip3 install pyopenssl
+
+### openssl 설치 및 개인키, CSR 발급
+$ sudo apt install openssl              # openssl 설치
+$ sudo mkdir certs
+$ openssl genrsa -out certs/node_private_key.pem 2048
+$ openssl req -new -key certs/node_private_key.pem -out certs/node_csr.pem
+```
+
+### 2. DB 설치 및 설정
+
+```
+### MySQL 설치 및 실행
+$ sudo apt install mysql-server
+$ sudo systemctl start mysql        # 실행되고 있지 않을 경우
+$ sudo systemctl status mysql
+
+### DB setting
+$ sudo mysql -u root -p
+mysql> CREATE DATABASE chaingate;
+mysql> USE chaingate;
+mysql> CREATE TABLE {tablename} (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    previous_hash CHAR(64) NOT NULL,
+    timestamp DOUBLE NOT NULL,
+    date CHAR(8) NOT NULL,
+    department VARCHAR(100) NOT NULL,
+    name VARCHAR(100) NOT NULL,
+    position VARCHAR(100) NOT NULL,
+    time TIME NOT NULL
+);
+mysql> CREATE USER '{username}'@'localhost' IDENTIFIED BY 'password';
+mysql> GRANT SELECT, INSERT ON chaingate.{tablename} TO '{username}'@'localhost';
+mysql> FLUSH PRIVILEGES;
+```
+
+### 3. Git Repository 및 필요 파일 생성
+
+```
+$ sudo apt install git
+$ git clone https://github.com/DDongu/ChainGATE.git
+$ cd /ChainGATE/blockchain
+$ vi config.py      # 아래 config.py 파일을 각 노드 환경에 맞게 작성
+$ vi register.py    # 아래 register.py 파일을 각 노드 환경에 맞게 작성
+```
+
+_config.py_
+
+```
+### at 192.168.0.29 노드 ###
+CA_ADDRESS = 'ca-server-address'                    # ip+port
+CSR_PATH = '/home/node1/certs/node_csr.pem'         # hostname is different
+NODE_CERT_PATH = '/home/node1/certs/node_cert.pem'  # hostname is different
+CSR_URL = f'http://{CA_ADDRESS}/api/v1/cert/request'
+VERIFY_URL = f'http://{CA_ADDRESS}/api/v1/cert/verify'
+REVOKE_URL = f'http://{CA_ADDRESS}/api/v1/cert/revoke'
+STATUS_URL = f'http://{CA_ADDRESS}/api/v1/cert/status'
+DB_LOCALHOST = 'localhost'
+DB_USER = 'db-username'
+DB_PASS = 'db-password'
+DB_DATABASE = 'chaingate'
+```
 
 _register.py_
 
@@ -22,11 +95,12 @@ _register.py_
 ### at 192.168.0.29 노드 ###
 import requests
 
-nodes = ['192.168.0.28', '192.168.0.31'] # 다른 노드에 등록을 원한다고 요청
-node_cert_path = '/node/certs/path'
+"""Register yourself by requesting the /nodes/register API of another nodes."""
+nodes = ['192.168.0.28', '192.168.0.31'] # Another nodes
+node_cert_path = '/home/node1/certs/node_cert.pem'
 with open(node_cert_path, 'r') as f:
     cert = f.read()
-data = {'cert': cert} # 등록할 노드의 인증서를 요청 데이터로 전송
+data = {'cert': cert} # Send the certificate of the node to be registered as request data
 
 for node in nodes:
     response = requests.post(f'http://{node}/nodes/register', json=data)
@@ -34,7 +108,32 @@ for node in nodes:
     print(response.json())
 ```
 
-### 1-2. transaction/new [POST]
+# How to start the Blockchain server
+
+```
+$ cd /ChainGATE/blockchain
+$ nohup sudo python3 -u blockAPI.py > ~/nohup.out 2>&1 &
+
+### After running blockAPI.py on every nodes
+$ python3 register.py
+
+### Log file
+$ cat ~/nohup.out
+```
+
+# Blockchain API GUIDE
+
+### 1. nodes/register [POST]
+
+    { "cert": cert }
+
+|  Key   |         Value         |   Type    |
+| :----: | :-------------------: | :-------: |
+| "cert" | CA를 통해 받은 인증서 | .pem 파일 |
+
+**❗각 노드의 register.py를 통해서 사용**
+
+### 2. transaction/new [POST]
 
     {
         "date": "2024-04-12",
@@ -52,7 +151,7 @@ for node in nodes:
 |  "position"  | 출입자 직급 |       String        |
 | "department" | 출입자 소속 |       String        |
 
-### 1-3. chain/search [POST]
+### 3. chain/search [POST]
 
     {
         "date": "2024-04-12",
