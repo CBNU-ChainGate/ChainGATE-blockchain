@@ -18,36 +18,36 @@
 $ sudo apt update
 
 ### ufw 활성화 및 포트 설정
-$ sudo apt install ufw
+$ sudo apt install ufw -y
 $ sudo ufw allow ssh, mysql, 5000       # 22, 3306, 5000 포트
 $ sudo ufw enable
 $ sudo ufw status
 
 ### python 및 관련 모듈 설치
-$ sudo apt install python3 python3-pip
+$ sudo apt install python3 python3-pip -y
 $ pip3 install flask
 $ pip3 install pyopenssl
 
 ### openssl 설치 및 개인키, CSR 발급
-$ sudo apt install openssl              # openssl 설치
+$ sudo apt install openssl -y              # openssl 설치
 $ sudo mkdir certs
-$ openssl genrsa -out certs/node_private_key.pem 2048
-$ openssl req -new -key certs/node_private_key.pem -out certs/node_csr.pem
+$ sudo openssl genrsa -out certs/node_private_key.pem 2048
+$ sudo openssl req -new -key certs/node_private_key.pem -out certs/node_csr.pem
 ```
 
 ### 2. DB 설치 및 설정
 
 ```
 ### MySQL 설치 및 실행
-$ sudo apt install mysql-server
-$ sudo systemctl start mysql        # 실행되고 있지 않을 경우
+$ sudo apt install mysql-server -y
 $ sudo systemctl status mysql
+$ sudo systemctl start mysql        # 실행되고 있지 않을 경우
 
 ### DB setting
 $ sudo mysql -u root -p
 mysql> CREATE DATABASE chaingate;
 mysql> USE chaingate;
-mysql> CREATE TABLE {tablename} (
+mysql> CREATE TABLE entrance_log (
     id INT AUTO_INCREMENT PRIMARY KEY,
     previous_hash CHAR(64) NOT NULL,
     timestamp DOUBLE NOT NULL,
@@ -58,14 +58,14 @@ mysql> CREATE TABLE {tablename} (
     time TIME NOT NULL
 );
 mysql> CREATE USER '{username}'@'localhost' IDENTIFIED BY 'password';
-mysql> GRANT SELECT, INSERT ON chaingate.{tablename} TO '{username}'@'localhost';
+mysql> GRANT SELECT, INSERT ON chaingate.entrance_log TO '{username}'@'localhost';
 mysql> FLUSH PRIVILEGES;
 ```
 
 ### 3. Git Repository 및 필요 파일 생성
 
 ```
-$ sudo apt install git
+$ sudo apt install git -y
 $ git clone https://github.com/DDongu/ChainGATE.git
 $ cd /ChainGATE/blockchain
 $ vi config.py      # 아래 config.py 파일을 각 노드 환경에 맞게 작성
