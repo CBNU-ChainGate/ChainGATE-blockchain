@@ -64,7 +64,6 @@ def changing_primary():
     reset_consensus_state()
     primary_N = (primary_N + 1) % len(blockchain.nodes)
     primary = sorted(blockchain.nodes)[primary_N]
-    pbft_protocol_condition = False
     print(f'Changed Primary Node is "{primary}"')
 
 
@@ -83,9 +82,10 @@ def primary_change_protocol():
     print("==========Primary change Protocol==========")  # Debugging
     notify_primary_change()
     changing_primary()
-    global consensus_nums
+    global consensus_nums, pbft_protocol_condition
     if consensus_nums > 3:  # Maximum allowed consensus attempts
         consensus_nums = 0
+        pbft_protocol_condition = False  # PBFT 프로토콜이 중단됨을 알림
         print("Error: The maximum number of requests has been exceeded!")
     else:
         consensus_nums += 1
@@ -378,7 +378,7 @@ def new_transaction():
     global pbft_protocol_condition, request_data, state, primary, node_id, consensus_nums, log, consensus_done
 
     while pbft_protocol_condition:
-        print("Waiting trasaction/new!!!!")
+        pass
 
     # 변수 초기화
     reset_consensus_state()
