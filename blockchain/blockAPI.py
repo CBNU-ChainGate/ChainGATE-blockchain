@@ -103,7 +103,7 @@ def send(receiver, message):
     print(f">>>{message['type']} To {receiver}>>>")
     response = requests.post(
         f"http://{receiver}:{PORT}{endpoint}", json=message)
-    print(response.json())  # Debugging
+    # print(response.json())  # Debugging
 
 
 def wait_for_messages(caller):
@@ -157,7 +157,7 @@ def handle_request():
         message = request.get_json()
         blockchain.len = blockchain.get_block_total()
         if node_id == primary:
-            print('Debugging: Pass the IF in Request')  # Debugging
+            # print('Debugging: Pass the IF in Request')  # Debugging
             start_time = time.time()  # 제한 시간 재설정
             N = blockchain.len + 1
 
@@ -179,7 +179,8 @@ def handle_request():
                 threads.append(preprepare_thread)
                 preprepare_thread.start()
         else:
-            return jsonify({'message': '(Request) This is not Primary node!'}), 400
+            print("This is not Primary node!")  # Debugging
+            return jsonify({'message': f'(Request) not Primary node.'}), 400
     except Exception as e:
         primary_change_protocol()
         return jsonify({'error': str(e)}), 500
@@ -192,12 +193,13 @@ def handle_preprepare():  # Primary 노드는 해당 함수 실행 안함
     global consensus_done
     print("==========Pre-prepare==========")  # Debugging
     if stop_pbft:
-        return jsonify({'error': 'PBFT protocol stopped due to primary change!'}), 500
+        print("PBFT Protocol stopedd due to primary change!")  # Debugging
+        return jsonify({'error': 'PBFT protocol has stopped.'}), 500
     message = request.get_json()
     try:
         # pre-prepare 메세지에 대한 검증
         if validate_preprepare(message):
-            print('Debugging: Pass the IF in preprepare!!')  # Debugging
+            # print('Debugging: Pass the IF in preprepare!!')  # Debugging
             log.append(message)  # pre-prepare 메세지 수집
             # for문을 비동기로 처리
             threads = []
@@ -228,7 +230,8 @@ def handle_prepare():
     """Prepare Step."""
     global prepare_certificate, log, consensus_done, get_pre_msg
     if stop_pbft:
-        return jsonify({'error': 'PBFT protocol stopped due to primary change!'}), 500
+        print("PBFT Protocol stopedd due to primary change!")  # Debugging
+        return jsonify({'error': 'PBFT protocol has stopped.'}), 500
     message = request.get_json()
     while consensus_done[1] != 1 and node_id != primary:
         pass
@@ -236,7 +239,7 @@ def handle_prepare():
         log.append(message)         # prepare 메세지 수집
         if wait_for_messages('prepare'):  # 모든 노드한테서 메세지를 받을 때까지 기다리기
             consensus_done[2] += 1
-            return jsonify({'message': '(Prepare) Wait the message!'}), 404
+            return jsonify({'message': '(Prepare) Waiting the message.'}), 404
         print("==========PREPARE==========")  # Debugging
         prepare_msg_list = [m for m in log if m['type'] == 'PREPARE' and m['view']
                             == message['view'] and m['seq'] == message['seq']]
@@ -270,14 +273,15 @@ def handle_commit():
     """Commit Step."""
     global request_data, log, commit_certificate, consensus_done, prepare_certificate, commit_certificate
     if stop_pbft:
-        return jsonify({'error': 'PBFT protocol stopped due to primary change!'}), 500
+        print("PBFT Protocol stopedd due to primary change!")  # Debugging
+        return jsonify({'error': 'PBFT protocol has stopped.'}), 500
     while consensus_done[2] < node_len-1:
         pass
     try:
         message = request.get_json()
         log.append(message)         # commit 메세지 수집
         if wait_for_messages('commit'):  # 모든 노드한테서 메세지를 받을 때까지 기다리기
-            return jsonify({'message': '(Commit) Wait the message!'}), 404
+            return jsonify({'message': '(Commit) Waiting the message.'}), 404
         print("==========COMMIT==========")  # Debugging
         commit_msg_list = [m for m in log if m['type'] == 'COMMIT' and m['view']
                            == message['view'] and m['seq'] == message['seq']]
@@ -331,10 +335,10 @@ def register_nodes():
 
     nodes = sorted(blockchain.nodes)
     primary = nodes[primary_N]
-    print("Nodes: ", end='')  # debugging
-    print(blockchain.nodes)  # debugging
-    print("Primary node: ", end='')  # debugging
-    print(primary)  # debugging
+    # print("Nodes: ", end='')  # debugging
+    # print(blockchain.nodes)  # debugging
+    # print("Primary node: ", end='')  # debugging
+    # print(primary)  # debugging
     return jsonify({'message': 'Certificate received successfully.'}), 200
 
 
@@ -391,7 +395,7 @@ def new_transaction():
         'type': 'REQUEST',
         'data': data
     }
-    print(client_request)  # Debugging
+    # print(client_request)  # Debugging
     pbft_protocol_condition = True  # PBFT 프로토콜이 수행 중임을 알림
     send(node_id, client_request)
     return jsonify({'message': 'Send Request to node...'}), 201
