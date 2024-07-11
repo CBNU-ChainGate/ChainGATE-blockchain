@@ -60,10 +60,11 @@ def reset_consensus_state():
 
 def changing_primary():
     """Change Primary node."""
-    global primary_N, primary
+    global primary_N, primary, pbft_protocol_condition
     reset_consensus_state()
     primary_N = (primary_N + 1) % len(blockchain.nodes)
     primary = sorted(blockchain.nodes)[primary_N]
+    pbft_protocol_condition = False
     print(f'Changed Primary Node is "{primary}"')
 
 
